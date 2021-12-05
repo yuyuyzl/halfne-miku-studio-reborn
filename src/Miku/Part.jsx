@@ -1,5 +1,5 @@
 export default function Part({config}){
-    const {id,x,y,components,resource,resourceCenterX,resourceCenterY,rotation,virtual}=config;
+    const {id,x,y,components,resource,resourceCenterX,resourceCenterY,rotation,virtual,scaleY}=config;
     if(virtual)return null;
     return <div data-id={id} style={{
         position:'absolute',
@@ -7,7 +7,7 @@ export default function Part({config}){
     }}>
         <img src={resource} style={{
             position:'absolute',
-            transform:`translate(${-resourceCenterX}px,${-resourceCenterY}px)`,
+            transform:`translate(${-resourceCenterX}px,${-resourceCenterY}px) scaleY(${scaleY})`,
         }}/>
         {components?.map((o,i)=>
             <Part config={o} key={i}/>
