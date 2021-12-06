@@ -98,6 +98,23 @@ const mockConfig={
             gravityY:0.005,
             massX:0,
             massY:128,
+            rotation:(control,config,physics)=>{
+                const selfPos=getAbsolutePos(config,'head.tailL');
+                if(!selfPos)return undefined;
+                if(!physics?.tailL)return 0;
+                const dx=selfPos?.x-physics?.tailL?.px;
+                const dy=selfPos?.y-physics?.tailL?.py;
+                return Math.atan2(dy,dx)/Math.PI*180+90;
+            },
+            scaleY:(control,config,physics)=>{
+                const selfPos=getAbsolutePos(config,'head.tailL');
+                const selfConfig=getConfig(config,"tailL");
+                if(!selfPos)return undefined;
+                if(!physics?.tailL)return 1;
+                const dx=selfPos?.x-physics?.tailL?.px;
+                const dy=selfPos?.y-physics?.tailL?.py;
+                return Math.sqrt((dx*dx+dy*dy)/(selfConfig.massX*selfConfig.massX+selfConfig.massY*selfConfig.massY));
+            },
             resource:"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' version='1.1' xmlns:xlink='http://www.w3.org/1999/xlink' preserveAspectRatio='none' x='0px' y='0px' width='800px' height='600px' viewBox='-400 -300 800 600'%3e %3cdefs%3e %3cg id='Layer0_0_FILL'%3e %3cpath fill='%239CEBDA' stroke='none' d=' M -18.9 23.1 Q -18.85 22.5 -18.8 22.05 -18.6 19.35 -18.6 18.95 -18.6 18.8 -18.6 18.65 L -18.6 18.6 Q -18.75 18.9 -18.85 19.25 L -24.9 39.95 Q -24.95 40.1 -24.95 40.2 -25 40.35 -25 40.45 -25.05 40.6 -25.05 40.75 -25.1 40.85 -25.1 41 -25.15 41.1 -25.15 41.35 -25.25 41.6 -25.25 41.9 -25.3 42 -25.3 42.15 -25.35 42.45 -25.4 42.8 -25.45 43.05 -25.5 43.4 -25.55 43.55 -25.55 43.65 -26.1 47.15 -26.45 50.75 -26.55 52 -26.65 53.15 -28.7 74.45 -31.35 95.7 -30.35 92.75 -29.15 89.3 -22.55 69.7 -22.55 65.7 -22.55 65.05 -21.4 55.75 -20.25 46.3 -20.2 42.15 -20.1 37.55 -19.35 28.45 -19.05 25.2 -18.9 23.1 M -9.95 60.9 Q -9.05 55.55 -9.05 54.9 -9.05 52 -12.85 51 -16.65 50 -16.65 52.9 -16.65 53.1 -18.05 54.5 -19.7 56.15 -20.45 57.85 -21.15 59.25 -21.35 61.1 -21.5 62.25 -21.5 64.55 -21.5 65.3 -17.55 68.25 -13.6 71.2 -12.6 71.2 -10.95 71.2 -10.8 70.95 L -11 70.65 -10.5 68.15 Q -10.8 65.8 -9.95 60.9 M 1.35 59.3 Q 0.7 59.3 0.1 59.35 -1.8 59.85 -4.45 60.1 -8.5 57.15 -8.5 61.95 -8.5 63.4 -8.15 63.5 -7.9 63.55 -7.2 63.55 0.8 61.05 3 59.6 2.65 59.3 1.35 59.3 Z'/%3e %3cpath fill='%2342B5A8' stroke='none' d=' M 13.6 52.2 Q 12.5 52.6 11.25 52.6 -2.3 52.6 -11.75 39.05 -15.25 34.05 -17.4 28.2 -18.45 25.3 -18.9 23.1 -19.05 25.2 -19.35 28.45 -20.1 37.55 -20.2 42.15 -20.25 46.3 -21.4 55.75 -22.55 65.05 -22.55 65.7 -22.55 69.7 -29.15 89.3 -30.35 92.75 -31.35 95.7 -35.15 126.1 -40.15 156.4 -38.1 157.9 -35.6 157.7 -32.9 157.65 -31.3 155.9 -23.05 146.5 -15 136.5 -5.4 155.5 9.1 170.25 L 10.55 170 Q 11 168.4 11.2 166.8 12.6 154.3 17.95 142.75 19.7 143.7 21.25 144.9 34.45 153.55 48.85 154.5 40.05 145.3 35 134 17.6 94.5 13.6 52.2 M 0.1 59.35 Q 0.7 59.3 1.35 59.3 2.65 59.3 3 59.6 0.8 61.05 -7.2 63.55 -7.9 63.55 -8.15 63.5 -8.5 63.4 -8.5 61.95 -8.5 57.15 -4.45 60.1 -1.8 59.85 0.1 59.35 M -9.05 54.9 Q -9.05 55.55 -9.95 60.9 -10.8 65.8 -10.5 68.15 L -11 70.65 -10.8 70.95 Q -10.95 71.2 -12.6 71.2 -13.6 71.2 -17.55 68.25 -21.5 65.3 -21.5 64.55 -21.5 62.25 -21.35 61.1 -21.15 59.25 -20.45 57.85 -19.7 56.15 -18.05 54.5 -16.65 53.1 -16.65 52.9 -16.65 50 -12.85 51 -9.05 52 -9.05 54.9 Z'/%3e %3cpath fill='%23448888' stroke='none' d=' M 7.55 -4.15 Q -0.9 -11.65 -8.05 -1.1 -12.2 5.05 -15.4 11.55 -17.15 15.05 -18.6 18.65 -18.6 18.8 -18.6 18.95 -18.6 19.35 -18.8 22.05 -18.85 22.5 -18.9 23.1 -18.45 25.3 -17.4 28.2 -15.25 34.05 -11.75 39.05 -2.3 52.6 11.25 52.6 12.5 52.6 13.6 52.2 13.2 48.25 12.95 44.35 L 12.7 40.1 Q 12.6 38.45 12.55 36.85 11.9 20.15 11.25 3.4 11.05 -1.1 7.55 -4.15 Z'/%3e %3c/g%3e %3c/defs%3e %3cg transform='matrix( 1%2c 0%2c 0%2c 1%2c 0%2c0) '%3e %3cuse xlink:href='%23Layer0_0_FILL'/%3e %3c/g%3e %3c/svg%3e",
         },
         {
@@ -112,6 +129,23 @@ const mockConfig={
             gravityY:0.005,
             massX:0,
             massY:128,
+            rotation:(control,config,physics)=>{
+                const selfPos=getAbsolutePos(config,'head.tailR');
+                if(!selfPos)return undefined;
+                if(!physics?.tailR)return 0;
+                const dx=selfPos?.x-physics?.tailR?.px;
+                const dy=selfPos?.y-physics?.tailR?.py;
+                return Math.atan2(dy,dx)/Math.PI*180+90;
+            },
+            scaleY:(control,config,physics)=>{
+                const selfPos=getAbsolutePos(config,'head.tailR');
+                const selfConfig=getConfig(config,"tailR");
+                if(!selfPos)return undefined;
+                if(!physics?.tailR)return 1;
+                const dx=selfPos?.x-physics?.tailR?.px;
+                const dy=selfPos?.y-physics?.tailR?.py;
+                return Math.sqrt((dx*dx+dy*dy)/(selfConfig.massX*selfConfig.massX+selfConfig.massY*selfConfig.massY));
+            },
             resource:"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' version='1.1' xmlns:xlink='http://www.w3.org/1999/xlink' preserveAspectRatio='none' x='0px' y='0px' width='800px' height='600px' viewBox='-400 -300 800 600'%3e %3cdefs%3e %3cg id='Layer0_0_FILL'%3e %3cpath fill='%239CEBDA' stroke='none' d=' M -6.3 65.85 Q -6.3 66.15 -2.1 67.65 L 0.75 68.05 Q 3 68.1 5.9 64.1 6.1 64.5 6.75 66.4 7.8 68.05 10.6 68.05 12.35 68.05 13.5 67.25 13.55 67.25 13.6 67.2 13.9 69.4 16 75 19.1 83.1 22.15 83.1 23.4 83.1 24.15 82.35 24.05 84.25 23.9 86.9 23.35 95.85 23.35 100.05 23.35 101.95 23.6 105.9 23.85 109.85 23.85 111.7 23.8 114 24.85 118.6 25.95 123.25 25.95 124.2 25.95 129.15 27.85 137.25 29.75 145.35 29.75 149.1 29.75 149.75 30.05 151.3 30 151 30 150.75 L 26 98.8 Q 25.9 97.65 25.85 96.55 25.6 92.2 25.35 87.95 25.25 86 25.15 84.15 25.1 83.3 25.1 82.45 24.55 72.85 24.2 63.3 24 58.8 23.85 54.35 23.3228515625 38.0947265625 18.8 23.3 L 17.5 19.25 18.3 25.4 Q 19.102734375 27.0953125 19.8 31.9 20.5376953125 36.7107421875 21.5 46.3 22.52265625 55.9375 22.4 58.25 21.7 56.65 20.7 55.75 17.25 53.65 15.1 58.8 14 61.45 13.65 64.2 12.7 63.6 11.15 63.6 9.8 63.6 8.9 63.15 7.4 62.15 5.6 61.2 5.55 61.25 3.25 63.85 1.4 66 0 66.9 -5.4 65.65 -6.3 65.85 Z'/%3e %3cpath fill='%23448888' stroke='none' d=' M -0.1 10.95 Q -2.75 7.05 -7.15 5.5 L -11.55 9 -15.95 52.6 Q -6.373046875 62.787109375 3.1 42.1 9.7 25.4 -0.1 10.95 Z'/%3e %3cpath fill='%2342B5A8' stroke='none' d=' M -1.6 -6 Q -3.9 -6.85 -5.85 -5.05 -11.95 0.5 -11.55 9 L -7.15 5.5 Q -2.75 7.05 -0.1 10.95 9.7 25.4 3.1 42.1 -6.373046875 62.787109375 -15.95 52.6 -22.4 97.2 -42.45 138.05 -48.1 149.6 -57.45 158.75 -43 158.5 -29.35 150 -27.7 149 -25.95 148.1 -21.2 160.3 -20.55 173.4 -20.5 175.05 -20.1 176.75 L -18.7 177.1 Q -3.3 162.45 7.35 143.15 14.85 153.9 22.55 164.15 24 166.05 26.7 166.2 29.25 166.55 31.4 165.15 30.7 158.2 30.05 151.3 29.75 149.75 29.75 149.1 29.75 145.35 27.85 137.25 25.95 129.15 25.95 124.2 25.95 123.25 24.85 118.6 23.8 114 23.85 111.7 23.85 109.85 23.6 105.9 23.35 101.95 23.35 100.05 23.35 95.85 23.9 86.9 24.05 84.25 24.15 82.35 23.4 83.1 22.15 83.1 19.1 83.1 16 75 13.9 69.4 13.6 67.2 13.55 67.25 13.5 67.25 12.35 68.05 10.6 68.05 7.8 68.05 6.75 66.4 6.1 64.5 5.9 64.1 3 68.1 0.75 68.05 L -2.1 67.65 Q -6.3 66.15 -6.3 65.85 -5.4 65.65 0 66.9 1.4 66 3.25 63.85 5.55 61.25 5.6 61.2 7.4 62.15 8.9 63.15 9.8 63.6 11.15 63.6 12.7 63.6 13.65 64.2 14 61.45 15.1 58.8 17.25 53.65 20.7 55.75 21.7 56.65 22.4 58.25 22.52265625 55.9375 21.5 46.3 20.5376953125 36.7107421875 19.8 31.9 19.102734375 27.0953125 18.3 25.4 L 17.5 19.25 Q 14.05 -0.15 -1.6 -6 Z'/%3e %3c/g%3e %3c/defs%3e %3cg transform='matrix( 1%2c 0%2c 0%2c 1%2c 0%2c0) '%3e %3cuse xlink:href='%23Layer0_0_FILL'/%3e %3c/g%3e %3c/svg%3e",
         },
         {
@@ -324,10 +358,10 @@ const mockConfig={
                             resourceCenterY:300,
                             x:-1.9,
                             y:9.2,
-                            gravityX:0,
-                            gravityY:0.002,
-                            massX:0,
-                            massY:32,
+                            // gravityX:0,
+                            // gravityY:0.002,
+                            // massX:0,
+                            // massY:32,
                             resource:"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' version='1.1' xmlns:xlink='http://www.w3.org/1999/xlink' preserveAspectRatio='none' x='0px' y='0px' width='800px' height='600px' viewBox='-400 -300 800 600'%3e %3cdefs%3e %3cg id='Layer0_0_FILL'%3e %3cpath fill='%2353B5B5' stroke='none' d=' M 5.35 9 Q 5.2568359375 9.55 0.25 9.55 -1.0150390625 9.55 -3.45 8.45 L -9.35 41.9 Q -4.9 46.4 -3 52.5 -1.45 57.6 3.4 58.85 8.2314453125 50.3484375 12.35 41.25 10.26328125 35.2955078125 9.3 30.8 6.757421875 17.6626953125 5.55 9.9 5.460546875 9.45859375 5.35 9 Z'/%3e %3cpath fill='%23449998' stroke='none' d=' M 4.1 -1.65 Q 3.9701171875 -1.719921875 3.85 -1.8 2.65 -2.2 1.5 -2.4 -0.85 -2.65 -3 -1.5 -2.6498046875 0.3955078125 -3.2 3.6 -3.752734375 6.859765625 -4.1 9.3 -4.443359375 11.7427734375 -3.45 8.45 -1.0150390625 9.55 0.25 9.55 5.2568359375 9.55 5.35 9 5.383203125 8.9771484375 5.4 8.95 4.82109375 4.965234375 4.6 2.55 4.2462890625 0.4013671875 4.1 -1.65 Z'/%3e %3c/g%3e %3cg id='Layer0_1_FILL'%3e %3cpath fill='%2342474F' stroke='none' d=' M -1 29.9 Q -2.037890625 29.75 -4 29.75 -6.85 29.75 -7.5 30 -7.75 30.55 -7.75 31.85 -7.75 33.25 -7.6 34 L -6.85 34.2 Q -6.75 34.25 -6 34.25 -4.35 34.25 -2.5 33.55 -1.6099609375 33.213671875 -1.1 32.8 -1 31.9458984375 -1 31.3 L -1 29.9 M -2.6 27.85 Q -1.662890625 27.6685546875 -1 27.55 L -1 24.75 Q -4.7755859375 25 -5.75 25 -6.001171875 25 -6.25 25 -8 26.0794921875 -8 27.25 -8 28.05 -7.7 28.25 -7.55 28.4 -7 28.5 L -5 28.5 Q -4.5 28.2 -2.6 27.85 Z'/%3e %3c/g%3e %3c/defs%3e %3cg transform='matrix( 1%2c 0%2c 0%2c 1%2c 0%2c0) '%3e %3cuse xlink:href='%23Layer0_0_FILL'/%3e %3c/g%3e %3cg transform='matrix( 1%2c 0%2c 0%2c 1%2c 0%2c0) '%3e %3cuse xlink:href='%23Layer0_1_FILL'/%3e %3c/g%3e %3c/svg%3e",
                         },
                         {
@@ -400,10 +434,10 @@ const mockConfig={
                     resourceCenterY:300,
                     x:-45.85,
                     y:-35.5,
-                    gravityX:0.0005,
-                    gravityY:0.008,
-                    massX:0,
-                    massY:64,
+                    // gravityX:0.0005,
+                    // gravityY:0.008,
+                    // massX:0,
+                    // massY:64,
                     resource:"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' version='1.1' xmlns:xlink='http://www.w3.org/1999/xlink' preserveAspectRatio='none' x='0px' y='0px' width='800px' height='600px' viewBox='-400 -300 800 600'%3e %3cdefs%3e %3cg id='Layer0_0_FILL'%3e %3cpath fill='%2342B5A8' stroke='none' d=' M -4.15 -10.7 Q -4.34375 -10.6978515625 -4.55 -10.7 -4.5103515625 -9.219921875 -4.6 -7.65 -4.85 -2.75 -5.75 7 -5.75 12.4 -3.4 27.5 -1.6 39.4 -0.25 45.85 0.3 48.35 0.8 55.3 0.82109375 55.5748046875 0.85 55.85 5.0115234375 49.496875 6.7 42.05 7.381640625 38.9884765625 7.95 35.9 9.0779296875 30.3263671875 9.9 24.7 9.967578125 24.322265625 10 23.9 10.3181640625 21.91796875 10.55 19.9 10.6166015625 19.640625 10.65 19.35 10.728125 18.7693359375 10.8 18.15 10.877734375 17.5490234375 10.95 16.9 11.0244140625 16.2404296875 11.1 15.55 13.1056640625 -2.2138671875 -1.4 -9.85 -2.0806640625 -10.212890625 -2.8 -10.55 -2.8720703125 -10.5662109375 -2.95 -10.6 -3.6001953125 -10.713671875 -4.15 -10.7 Z'/%3e %3cpath fill='%239CEBDA' stroke='none' d=' M -4.55 -10.7 Q -6.2208984375 -10.4294921875 -6.8 -8.55 -6.7880859375 -8.517578125 -6.8 -8.5 -6.8939453125 -8.1767578125 -6.95 -7.85 -13 25.4 -0.5 57.8 L 0.35 56.6 Q 0.6068359375 56.2384765625 0.85 55.85 L 0.85 55.85 Q 0.82109375 55.5748046875 0.8 55.3 0.3 48.35 -0.25 45.85 -1.6 39.4 -3.4 27.5 -5.75 12.4 -5.75 7 -4.85 -2.75 -4.6 -7.65 -4.5103515625 -9.219921875 -4.55 -10.7 Z'/%3e %3c/g%3e %3c/defs%3e %3cg transform='matrix( 1%2c 0%2c 0%2c 1%2c 0%2c0) '%3e %3cuse xlink:href='%23Layer0_0_FILL'/%3e %3c/g%3e %3c/svg%3e",
                 },
                 {
@@ -460,10 +494,10 @@ const mockConfig={
                     resourceCenterY:300,
                     x:44.55,
                     y:-36.5,
-                    gravityX:-0.001,
-                    gravityY:0.008,
-                    massX:0,
-                    massY:64,
+                    // gravityX:-0.001,
+                    // gravityY:0.008,
+                    // massX:0,
+                    // massY:64,
                     resource:"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' version='1.1' xmlns:xlink='http://www.w3.org/1999/xlink' preserveAspectRatio='none' x='0px' y='0px' width='800px' height='600px' viewBox='-400 -300 800 600'%3e %3cdefs%3e %3cg id='Layer0_0_FILL'%3e %3cpath fill='%239CEBDA' stroke='none' d=' M -6.45 4.3 Q -6.1431640625 24.9703125 -3.95 45.7 -3.61484375 48.7767578125 -3.25 51.8 -3.0298828125 53.627734375 -2.8 55.4 -2.673046875 56.344921875 -2.55 57.25 -2.211328125 59.7865234375 -1.85 62.3 L -1.2 62.3 Q -3.4904296875 20.266796875 -6.45 4.3 Z'/%3e %3cpath fill='%2342B5A8' stroke='none' d=' M -2.45 -12.65 Q -8.7794921875 -8.29765625 -7.65 -3.65 -6.4603515625 1.045703125 -6.45 4.3 -3.4904296875 20.266796875 -1.2 62.3 L -0.7 62.35 Q 1.338671875 56.7546875 6.4 41.05 11.4837890625 25.39296875 8.7 7.3 5.9109375 -10.7423828125 -2.45 -12.65 Z'/%3e %3c/g%3e %3c/defs%3e %3cg transform='matrix( 1%2c 0%2c 0%2c 1%2c 0%2c0) '%3e %3cuse xlink:href='%23Layer0_0_FILL'/%3e %3c/g%3e %3c/svg%3e",
                 },
                 {
@@ -493,10 +527,10 @@ const mockConfig={
                             resourceCenterY:300,
                             x:7.5,
                             y:-1.7,
-                            gravityX:0,
-                            gravityY:0.06,
-                            massX:0,
-                            massY:100,
+                            // gravityX:0,
+                            // gravityY:0.06,
+                            // massX:0,
+                            // massY:100,
                             resource: "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' version='1.1' xmlns:xlink='http://www.w3.org/1999/xlink' preserveAspectRatio='none' x='0px' y='0px' width='800px' height='600px' viewBox='-400 -300 800 600'%3e %3cdefs%3e %3cg id='Layer0_0_FILL'%3e %3cpath fill='%239CEBDA' stroke='none' d=' M -25.5 16.8 Q -26.25 12.65 -24.15 7.9 -28.4 16.75 -29.15 26.5 -30 37.5 -27.4 48.2 L -26.75 50.1 Q -29.5 39.1 -27 33.35 -24.55 27.55 -24.35 27 -21.7 29.9 -11 28.45 -10.6 28.4 -10.2 28.35 -18.65 29.05 -21.65 25.35 -24.65 21.6 -25.5 16.8 M 5.95 29.4 Q 12.2 31.75 12.25 37 L 16.15 15.75 Q 12.9 26.4 1.75 27.55 -1.35 27.7 -4.45 27.95 1.75 27.8 5.95 29.4 Z'/%3e %3cpath fill='%2342B5A8' stroke='none' d=' M 17.35 -0.85 L 9 -9.9 Q 6.95 -9.8 4.95 -9.65 -1.95 -9.35 -8.45 -6.6 -17.9 -2.45 -23.35 6.35 -23.6 6.8 -23.85 7.25 L -24.15 7.9 Q -26.25 12.65 -25.5 16.8 -24.65 21.6 -21.65 25.35 -18.65 29.05 -10.2 28.35 -10.6 28.4 -11 28.45 -21.7 29.9 -24.35 27 -24.55 27.55 -27 33.35 -29.5 39.1 -26.75 50.1 L -27.4 48.2 Q -25.05 56.2 -20.9 63.45 -19.45 65.9 -17.95 68.4 L -12.2 45.15 Q -10.6 56.7 -4.8 66.5 -3.85 68.15 -2.8 69.8 -1.75 71.35 -0.65 72.9 5.5 59.9 9.65 46.1 10.3 43.85 10.95 41.55 11.6 39.3 12.25 37 12.2 31.75 5.95 29.4 1.75 27.8 -4.45 27.95 -1.35 27.7 1.75 27.55 12.9 26.4 16.15 15.75 L 17.35 -0.85 Z'/%3e %3c/g%3e %3c/defs%3e %3cg transform='matrix( 1%2c 0%2c 0%2c 1%2c 0%2c0) '%3e %3cuse xlink:href='%23Layer0_0_FILL'/%3e %3c/g%3e %3c/svg%3e",
                         },
                         {
@@ -563,7 +597,7 @@ export default function Miku(props){
                             return [k, _parseConfig(v)]
                         }
                     case "function": {
-                        const result = v(control, root);
+                        const result = v(control, root, physics);
                         if (result !== undefined&&typeof result!=='function') {
                             modified=true;
                             return [k, result];
@@ -586,24 +620,24 @@ export default function Miku(props){
         }else return parsed;
     }
     let config=parseConfig(mockConfig,mockConfig);
-    const applyPhysics=(_config,currentPath,physics)=>{
-        if(_config.massX!==undefined&&_config.massY!==undefined){
-            const absPos=getAbsolutePos(config,currentPath);
-            _config.rotation=(physics[currentPath]?.rotation-absPos.rotation)??_config.rotation;
-            _config.scaleY=physics[currentPath]?.scaleY??_config.scaleY;
-        }
-        _config.components?.forEach(o=>{
-            applyPhysics(o,(currentPath?currentPath+'.':'')+o.id,physics);
-        });
-    }
-    applyPhysics(config,undefined,physics);
+    // const applyPhysics=(_config,currentPath,physics)=>{
+    //     if(_config.massX!==undefined&&_config.massY!==undefined){
+    //         const absPos=getAbsolutePos(config,currentPath);
+    //         _config.rotation=(physics[currentPath]?.rotation-absPos.rotation)??_config.rotation;
+    //         _config.scaleY=physics[currentPath]?.scaleY??_config.scaleY;
+    //     }
+    //     _config.components?.forEach(o=>{
+    //         applyPhysics(o,(currentPath?currentPath+'.':'')+o.id,physics);
+    //     });
+    // }
+    // applyPhysics(config,undefined,physics);
     currentConfig.current=config;
     useEffect(()=>{
         const collectPhysicsComponent=(config,currentPath)=>{
             if(config.massX!==undefined&&config.massY!==undefined){
                 const absPos=getAbsolutePos(currentConfig.current,currentPath);
                 const p=toAbsolute(config.massX,config.massY,absPos);
-                console.log(absPos,p);
+                //console.log(absPos,p);
                 setDebugPoint(p);
                 setPhysics(physics=>({
                     ...physics,
@@ -621,55 +655,63 @@ export default function Miku(props){
             });
         }
         collectPhysicsComponent(currentConfig.current);
-        const dt=16;
-        const interval=setInterval(()=>setPhysics(physics=>{
-            let newPhysics=physics;
-            Object.entries(physics).forEach(([currentPath,phy])=>{
-                const config=getConfig(currentConfig.current,currentPath);
-                const absPos=getAbsolutePos(currentConfig.current,currentPath);
-                console.log(currentPath,phy.px,phy.py,phy.vx,phy.vy,absPos);
-                // 确定加速度
-                const ax=config.gravityX;
-                const ay=config.gravityY;
-                // 确定无束缚速度
-                let vx=phy.vx+ax*dt;
-                let vy=phy.vy+ay*dt;
-                if(config.damp){
-                    vx*=config.damp;
-                    vy*=config.damp;
-                }
-                // 确定无束缚绝对位置
-                let px=phy.px+vx*dt;
-                let py=phy.py+vy*dt;
-                // 确定无束缚相对位置
-                const rp=toRelative(px,py,absPos);
-                let rpx=rp.x;
-                let rpy=rp.y;
-                // 回收到束缚圆内
-                let ratio=Math.sqrt((rpx*rpx+rpy*rpy)/(config.massX*config.massX+config.massY*config.massY));
-                if (ratio>1){
-                    rpx/=ratio;
-                    rpy/=ratio;
-                    ratio=1;
-                }
-                // 计算真实位置和真实速度
-                const newP=toAbsolute(rpx,rpy,absPos);
-                vx=(newP.x-phy.px)/dt;
-                vy=(newP.y-phy.py)/dt;
-                px=newP.x;
-                py=newP.y;
-                setDebugPoint(newP);
-                // 计算真实旋转
-                let newRotation=absPos.rotation+Math.atan2(rpy,rpx)*180/Math.PI-90;
-                console.log(newRotation);
-                newPhysics[currentPath]={
-                    vx,vy,px,py,rotation:newRotation,scaleY:ratio,
-                }
+        let canceled=false;
+        let lastTime=0;
+        const work=(timestamp)=> {
+            if (canceled)return;
+            const dt = timestamp - lastTime;
+            //console.log(timestamp,dt);
+            lastTime = timestamp;
+            setPhysics(physics => {
+                let newPhysics = physics;
+                Object.entries(physics).forEach(([currentPath, phy]) => {
+                    const config = getConfig(currentConfig.current, currentPath);
+                    const absPos = getAbsolutePos(currentConfig.current, currentPath);
+                    //console.log(currentPath,phy.px,phy.py,phy.vx,phy.vy,absPos);
+                    // 确定加速度
+                    const ax = config.gravityX;
+                    const ay = config.gravityY;
+                    // 确定无束缚速度
+                    let vx = phy.vx + ax * dt;
+                    let vy = phy.vy + ay * dt;
+                    if (config.damp) {
+                        vx *= config.damp;
+                        vy *= config.damp;
+                    }
+                    // 确定无束缚绝对位置
+                    let px = phy.px + vx * dt;
+                    let py = phy.py + vy * dt;
+                    // 确定无束缚相对位置
+                    const rp = toRelative(px, py, absPos);
+                    let rpx = rp.x;
+                    let rpy = rp.y;
+                    // 回收到束缚圆内
+                    let ratio = Math.sqrt((rpx * rpx + rpy * rpy) / (config.massX * config.massX + config.massY * config.massY));
+                    if (ratio > 1) {
+                        rpx /= ratio;
+                        rpy /= ratio;
+                        ratio = 1;
+                    }
+                    // 计算真实位置和真实速度
+                    const newP = toAbsolute(rpx, rpy, absPos);
+                    vx = (newP.x - phy.px) / dt;
+                    vy = (newP.y - phy.py) / dt;
+                    px = newP.x;
+                    py = newP.y;
+                    setDebugPoint(newP);
+                    // 计算真实旋转
+                    // let newRotation=absPos.rotation+Math.atan2(rpy,rpx)*180/Math.PI-90;
+                    newPhysics[currentPath] = {
+                        vx, vy, px, py,
+                    }
+                })
+                //console.log(newPhysics);
+                return newPhysics
             })
-            console.log(newPhysics);
-            return newPhysics
-        }),dt);
-        return ()=>{clearInterval(interval)}
+            requestAnimationFrame(work);
+        }
+        work(performance.now());
+        return ()=>{canceled=true;}
     },[]);
 
     useEffect(()=>{console.log(physics)},[physics]);
