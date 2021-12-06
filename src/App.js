@@ -7,9 +7,8 @@ const W=800;
 const H=600;
 
 function App() {
-    const [control,setControl]=useState({});
     const stageRef=useRef();
-    const updateControl=(mouseX,mouseY)=>{
+    const getControl=(mouseX,mouseY)=>{
         let control = {x:(mouseX-W/2)/W, y:(mouseY-H/2)/H};
 
         control.x = Math.atan(control.x*4)/Math.PI*2;
@@ -26,10 +25,11 @@ function App() {
         const fwd_cos = Math.cos(fwd_ang);
         const lean = 1-(.5-fwd_sin*.5)*side_cos;
         control={...control,right,fwd,side_ang,fwd_ang,side_sin,side_cos,fwd_sin,fwd_cos,lean};
-        console.log(control);
-        setControl(control);
+        //console.log(control);
+        return control;
     }
-    useEffect(()=>{updateControl(400,300)},[]);
+
+    const [control,setControl]=useState(getControl(400,300));
   return (
     <div className="App">
       <div
@@ -41,7 +41,7 @@ function App() {
               if(!stageRect)return;
               const mouseX=e.clientX-Math.floor(stageRect.x);
               const mouseY=e.clientY-Math.floor(stageRect.y);
-              updateControl(mouseX,mouseY);
+              setControl(getControl(mouseX,mouseY));
           }}
       >
         <Miku control={control}></Miku>
