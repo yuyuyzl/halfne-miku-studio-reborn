@@ -13,6 +13,7 @@ const getConfig=(config,path)=>{
     let pathList=path.split('.');
     let currentConfig=config;
     while(currentConfig&&pathList.length){
+        // eslint-disable-next-line no-loop-func
         currentConfig=currentConfig.components.filter(o=>o.id===pathList[0])[0];
         pathList=pathList.slice(1);
     }
@@ -48,6 +49,7 @@ const getAbsolutePos=(config,path)=>{
         if(typeof currentConfig.y==='function')return undefined;
         if(typeof currentConfig.rotation==='function')return undefined;
         revList.unshift(currentConfig);
+        // eslint-disable-next-line no-loop-func
         currentConfig=currentConfig.components.filter(o=>o.id===pathList[0])[0];
         pathList=pathList.slice(1);
     }
@@ -620,6 +622,7 @@ const mockConfig={
 export default function Miku(props){
     const {control}=props;
     const [physics,setPhysics]=useState({});
+    // eslint-disable-next-line no-unused-vars
     const [debugPoint,setDebugPoint]=useState();
     const currentConfig=useRef({});
     const parseConfig= (o,root)=> {
@@ -653,6 +656,7 @@ export default function Miku(props){
         }
         const parsed=_parseConfig(o);
         if(remain){
+            // eslint-disable-next-line no-throw-literal
             if(!modified)throw "Infinite Loop In Config File";
             else return parseConfig(parsed,parsed);
         }else return parsed;

@@ -1,7 +1,6 @@
-import logo from './logo.svg';
 import './App.less';
 import Miku from "./Miku/Miku";
-import {useEffect, useRef, useState} from "react";
+import {useRef, useState} from "react";
 
 const W=800;
 const H=600;
