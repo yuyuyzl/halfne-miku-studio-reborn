@@ -73,13 +73,13 @@ const getAbsolutePos=(config,path)=>{
     return {x:x0,y:y0,rotation:rotation0};
 }
 
-const physicsRotation=(path)=>(control,config,physics)=>{
+const physicsRotation=(path,offset=0)=>(control,config,physics)=>{
     const selfPos=getAbsolutePos(config,path);
     if(!selfPos)return undefined;
     if(!physics[path])return 0;
     const dx=selfPos?.x-physics[path]?.px;
     const dy=selfPos?.y-physics[path]?.py;
-    return Math.atan2(dy,dx)/Math.PI*180+90-selfPos.rotation;
+    return Math.atan2(dy,dx)/Math.PI*180+90-selfPos.rotation+offset;
 }
 const physicsScaleY=(path)=>(control,config,physics)=>{
     const selfPos=getAbsolutePos(config,path);
@@ -507,11 +507,11 @@ const mockConfig={
                     resourceCenterY:300,
                     x:-19.3,
                     y:-103.45,
-                    gravityX:0.012,
-                    gravityY:0.012,
+                    gravityX:-0.012,
+                    gravityY:-0.012,
                     massX:0,
                     massY:-32,
-                    rotation:physicsRotation('head.ahoge'),
+                    rotation:physicsRotation('head.ahoge',180),
                     scaleY:physicsScaleY('head.ahoge'),
                     resource: "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' version='1.1' xmlns:xlink='http://www.w3.org/1999/xlink' preserveAspectRatio='none' x='0px' y='0px' width='800px' height='600px' viewBox='-400 -300 800 600'%3e %3cdefs%3e %3cg id='Layer0_0_FILL'%3e %3cpath fill='%2342B5A8' stroke='none' d=' M 2.45 -29.9 L 0.45 -28.9 Q -11.2 -24.6 -11.45 -13.35 -11.55 -9.7 -9.5 -6.55 -5.75 -0.8 1.1 1.35 -7.45 -5.65 -5.95 -16.3 -5.15 -22.1 -1.25 -26.2 0.6 -28.05 2.45 -29.9 Z'/%3e %3c/g%3e %3c/defs%3e %3cg transform='matrix( 1%2c 0%2c 0%2c 1%2c 0%2c0) '%3e %3cuse xlink:href='%23Layer0_0_FILL'/%3e %3c/g%3e %3c/svg%3e",
                 },
