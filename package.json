@@ -151,5 +151,6 @@
   "devDependencies": {
     "less": "^4.1.2",
     "less-loader": "^7.3.0"
-  }
+  },
+  "homepage": "https://yuyuyzl.github.io/halfne-miku-studio-reborn/"
 }
