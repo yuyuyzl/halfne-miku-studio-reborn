@@ -8,6 +8,7 @@ const H=600;
 function App() {
     const stageRef=useRef();
     const latestMousePos=useRef([400,300]);
+    const [timestamp,setTimestamp]=useState(performance.now());
     const getControl=(mouseX,mouseY)=>{
         let control = {x:(mouseX-W/2)/W, y:(mouseY-H/2)/H,mouseX,mouseY};
 
@@ -40,13 +41,14 @@ function App() {
             setControl(control=>{
                 const x=latestMousePos.current[0];
                 const y=latestMousePos.current[1];
-                const ratio=0.02*dt;
+                const ratio=Math.min(0.02*dt,1);
                 const easeX=control.mouseX*(1-ratio)+x*ratio;
                 const easeY=control.mouseY*(1-ratio)+y*ratio;
                 const distance=Math.sqrt((easeX-control.mouseX)*(easeX-control.mouseX)+(easeY-control.mouseY)*(easeY-control.mouseY))
                 if(distance<1)return getControl(x,y);
                 return getControl(easeX,easeY);
             })
+            setTimestamp(timestamp);
             requestAnimationFrame(updateControl);
         }
         requestAnimationFrame(updateControl);
@@ -67,7 +69,7 @@ function App() {
               latestMousePos.current=[mouseX,mouseY];
           }}
       >
-        <Miku control={control}></Miku>
+        <Miku control={control} timestamp={timestamp}></Miku>
       </div>
     </div>
   );

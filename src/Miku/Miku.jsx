@@ -642,7 +642,8 @@ const mockConfig={
 }
 
 export default function Miku(props){
-    const {control}=props;
+    const {control,timestamp}=props;
+    const lastTime=useRef(performance.now());
     const [physics,setPhysics]=useState({});
     // eslint-disable-next-line no-unused-vars
     const [debugPoint,setDebugPoint]=useState();
@@ -722,91 +723,87 @@ export default function Miku(props){
             });
         }
         collectPhysicsComponent(currentConfig.current);
-        let canceled=false;
-        let lastTime=performance.now();
-        const work=(timestamp)=> {
-            if (canceled)return;
-            const dt = timestamp - lastTime;
-            //console.log(timestamp,dt);
-            lastTime = timestamp;
-            setPhysics(physics => {
-                let newPhysics = physics;
-                Object.entries(physics).forEach(([currentPath, phy]) => {
-                    const config = getConfig(currentConfig.current, currentPath);
-                    const absPos = getAbsolutePos(currentConfig.current, currentPath);
-                    //console.log(currentPath,phy.px,phy.py,phy.vx,phy.vy,absPos);
-                    // 确定加速度
-                    const ax = config.gravityX;
-                    const ay = config.gravityY;
-                    // 确定无束缚速度
-                    let vx = phy.vx + ax * dt;
-                    let vy = phy.vy + ay * dt;
-                    if (config.damp) {
-                        vx *= 1-config.damp*dt;
-                        vy *= 1-config.damp*dt;
-                    }
-                    // 确定无束缚绝对位置
-                    let px = phy.px + vx * dt;
-                    let py = phy.py + vy * dt;
-                    // 确定无束缚相对位置
-                    const rp = toRelative(px, py, absPos);
-                    let rpx = rp.x;
-                    let rpy = rp.y;
-                    // 回收到束缚圆内
-                    let ratio = Math.sqrt((rpx * rpx + rpy * rpy) / (config.massX * config.massX + config.massY * config.massY));
-                    if (ratio > 1) {
-                        rpx /= ratio;
-                        rpy /= ratio;
-                        ratio = 1;
-                    }
-                    if(config.rotationMin!==undefined&&config.rotationMax!==undefined){
-                        const selfPos=absPos;
-
-                        const newP = toAbsolute(rpx, rpy, absPos);
-                        const dx=selfPos?.x-newP.x;
-                        const dy=selfPos?.y-newP.y;
-                        const absoluteRotation= Math.atan2(dy,dx)/Math.PI*180+90;
-                        const parentPath=currentPath.split('.').slice(0,-1).join('.');
-                        const parentRotation=getAbsolutePos(currentConfig.current,parentPath)?.rotation;
-                        const relativeRotation=absoluteRotation-parentRotation;
-                        //console.log(rpx,rpy)
-
-                        // let newRotation=Math.atan2(rpy,rpx)*180/Math.PI-90;
-                        // const parentPath=currentPath.split('.').slice(0,-1).join('.');
-                        // const parentRotation=getAbsolutePos(currentConfig.current,parentPath)?.rotation;
-                        // const relativeRotation=newRotation-parentRotation;
-                        //console.log(newRotation);
-                        let rot=0;
-                        if(relativeRotation<config.rotationMin){
-                            rot=config.rotationMin-relativeRotation;
-                        }else if (relativeRotation>config.rotationMax){
-                            rot=config.rotationMax-relativeRotation;
-                        }
-                        // console.log(rot);
-                        const newRP=rotateVec(rpx,rpy,rot);
-                        rpx=newRP.x;
-                        rpy=newRP.y;
-                        //if(rot!==0)debugger;
-                    }
-                    // 计算真实位置和真实速度
-                    const newP = toAbsolute(rpx, rpy, absPos);
-                    vx = (newP.x - phy.px) / dt;
-                    vy = (newP.y - phy.py) / dt;
-                    px = newP.x;
-                    py = newP.y;
-                    newPhysics[currentPath] = {
-                        vx, vy, px, py,
-                    }
-                })
-                //console.log(newPhysics);
-                setNotifier(timestamp);
-                return newPhysics;
-            })
-            requestAnimationFrame(work);
-        }
-        requestAnimationFrame(work);
-        return ()=>{canceled=true;}
     },[]);
+
+    const work=(timestamp)=> {
+        const dt = timestamp - lastTime.current;
+        //console.log(timestamp,dt);
+        lastTime.current = timestamp;
+        setPhysics(physics => {
+            let newPhysics = physics;
+            Object.entries(physics).forEach(([currentPath, phy]) => {
+                const config = getConfig(currentConfig.current, currentPath);
+                const absPos = getAbsolutePos(currentConfig.current, currentPath);
+                //console.log(currentPath,phy.px,phy.py,phy.vx,phy.vy,absPos);
+                // 确定加速度
+                const ax = config.gravityX;
+                const ay = config.gravityY;
+                // 确定无束缚速度
+                let vx = phy.vx + ax * dt;
+                let vy = phy.vy + ay * dt;
+                if (config.damp) {
+                    vx *= 1-config.damp*dt;
+                    vy *= 1-config.damp*dt;
+                }
+                // 确定无束缚绝对位置
+                let px = phy.px + vx * dt;
+                let py = phy.py + vy * dt;
+                // 确定无束缚相对位置
+                const rp = toRelative(px, py, absPos);
+                let rpx = rp.x;
+                let rpy = rp.y;
+                // 回收到束缚圆内
+                let ratio = Math.sqrt((rpx * rpx + rpy * rpy) / (config.massX * config.massX + config.massY * config.massY));
+                if (ratio > 1) {
+                    rpx /= ratio;
+                    rpy /= ratio;
+                    ratio = 1;
+                }
+                if(config.rotationMin!==undefined&&config.rotationMax!==undefined){
+                    const selfPos=absPos;
+
+                    const newP = toAbsolute(rpx, rpy, absPos);
+                    const dx=selfPos?.x-newP.x;
+                    const dy=selfPos?.y-newP.y;
+                    const absoluteRotation= Math.atan2(dy,dx)/Math.PI*180+90;
+                    const parentPath=currentPath.split('.').slice(0,-1).join('.');
+                    const parentRotation=getAbsolutePos(currentConfig.current,parentPath)?.rotation;
+                    const relativeRotation=absoluteRotation-parentRotation;
+                    //console.log(rpx,rpy)
+
+                    // let newRotation=Math.atan2(rpy,rpx)*180/Math.PI-90;
+                    // const parentPath=currentPath.split('.').slice(0,-1).join('.');
+                    // const parentRotation=getAbsolutePos(currentConfig.current,parentPath)?.rotation;
+                    // const relativeRotation=newRotation-parentRotation;
+                    //console.log(newRotation);
+                    let rot=0;
+                    if(relativeRotation<config.rotationMin){
+                        rot=config.rotationMin-relativeRotation;
+                    }else if (relativeRotation>config.rotationMax){
+                        rot=config.rotationMax-relativeRotation;
+                    }
+                    // console.log(rot);
+                    const newRP=rotateVec(rpx,rpy,rot);
+                    rpx=newRP.x;
+                    rpy=newRP.y;
+                    //if(rot!==0)debugger;
+                }
+                // 计算真实位置和真实速度
+                const newP = toAbsolute(rpx, rpy, absPos);
+                vx = (newP.x - phy.px) / dt;
+                vy = (newP.y - phy.py) / dt;
+                px = newP.x;
+                py = newP.y;
+                newPhysics[currentPath] = {
+                    vx, vy, px, py,
+                }
+            })
+            //console.log(newPhysics);
+            setNotifier(timestamp);
+            return newPhysics;
+        })
+    }
+    useEffect(()=>work(timestamp),[timestamp]);
 
     // useEffect(()=>{console.log(physics)},[physics]);
     // if(debugPoint){
