@@ -1,14 +1,15 @@
 import './App.less';
 import Miku from "./Miku/Miku";
-import {useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 
 const W=800;
 const H=600;
 
 function App() {
     const stageRef=useRef();
+    const latestMousePos=useRef([400,300]);
     const getControl=(mouseX,mouseY)=>{
-        let control = {x:(mouseX-W/2)/W, y:(mouseY-H/2)/H};
+        let control = {x:(mouseX-W/2)/W, y:(mouseY-H/2)/H,mouseX,mouseY};
 
         control.x = Math.atan(control.x*4)/Math.PI*2;
         control.y = Math.atan(control.y*4)/Math.PI*2;
@@ -29,6 +30,28 @@ function App() {
     }
 
     const [control,setControl]=useState(getControl(400,300));
+    useEffect(()=>{
+        let lastTime=performance.now();
+        let canceled=false;
+        const updateControl=(timestamp)=>{
+            if (canceled) return;
+            const dt=timestamp-lastTime;
+            lastTime=timestamp;
+            setControl(control=>{
+                const x=latestMousePos.current[0];
+                const y=latestMousePos.current[1];
+                const ratio=0.02*dt;
+                const easeX=control.mouseX*(1-ratio)+x*ratio;
+                const easeY=control.mouseY*(1-ratio)+y*ratio;
+                const distance=Math.sqrt((easeX-control.mouseX)*(easeX-control.mouseX)+(easeY-control.mouseY)*(easeY-control.mouseY))
+                if(distance<1)return getControl(x,y);
+                return getControl(easeX,easeY);
+            })
+            requestAnimationFrame(updateControl);
+        }
+        requestAnimationFrame(updateControl);
+        return ()=>{canceled=true;}
+    },[]);
   return (
     <div className="App">
       <div
@@ -40,7 +63,8 @@ function App() {
               if(!stageRect)return;
               const mouseX=e.clientX-Math.floor(stageRect.x);
               const mouseY=e.clientY-Math.floor(stageRect.y);
-              setControl(getControl(mouseX,mouseY));
+              //setControl(getControl(mouseX,mouseY));
+              latestMousePos.current=[mouseX,mouseY];
           }}
       >
         <Miku control={control}></Miku>

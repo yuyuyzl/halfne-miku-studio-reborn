@@ -794,8 +794,6 @@ export default function Miku(props){
                     vy = (newP.y - phy.py) / dt;
                     px = newP.x;
                     py = newP.y;
-                    //if(currentPath==='head.ahoge')setDebugPoint(newP);
-                    // 计算真实旋转
                     newPhysics[currentPath] = {
                         vx, vy, px, py,
                     }
