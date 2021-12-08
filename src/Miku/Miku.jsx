@@ -706,7 +706,7 @@ export default function Miku(props){
                 const p=toAbsolute(config.massX,config.massY,absPos);
                 //console.log(absPos,p);
                 //setDebugPoint(p);
-                //debugger;
+                // debugger;
                 setPhysics(physics=>({
                     ...physics,
                     [currentPath]:{
@@ -729,6 +729,7 @@ export default function Miku(props){
         const dt = timestamp - lastTime.current;
         //console.log(timestamp,dt);
         lastTime.current = timestamp;
+        if(dt>1000||dt<=0)return;
         setPhysics(physics => {
             let newPhysics = physics;
             Object.entries(physics).forEach(([currentPath, phy]) => {
@@ -798,12 +799,14 @@ export default function Miku(props){
                     vx, vy, px, py,
                 }
             })
-            //console.log(newPhysics);
+            // console.log(newPhysics);
             setNotifier(timestamp);
             return newPhysics;
         })
     }
-    useEffect(()=>work(timestamp),[timestamp]);
+    useEffect(()=> {
+        work(timestamp);
+    },[timestamp]);
 
     // useEffect(()=>{console.log(physics)},[physics]);
     // if(debugPoint){
