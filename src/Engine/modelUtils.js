@@ -1,3 +1,4 @@
+import {createContext, createScript} from "vm-browserify";
 
 export const getConfig=(config,path)=>{
     let pathList=path.split('.');
@@ -79,4 +80,18 @@ export const physicsScaleY=(path)=>(control,config,physics)=>{
     const dx=selfPos?.x-physics[path]?.px;
     const dy=selfPos?.y-physics[path]?.py;
     return Math.sqrt((dx*dx+dy*dy)/(selfConfig.massX*selfConfig.massX+selfConfig.massY*selfConfig.massY));
+}
+
+export const parseModelJS=(code)=>{
+    return createScript(code)
+        .runInContext(
+            createContext({
+                physicsScaleY,
+                physicsRotation,
+                getConfig,
+                getAbsolutePos,
+                rotateVec,
+                toAbsolute,
+                toRelative
+            }));
 }
