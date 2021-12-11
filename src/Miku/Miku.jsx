@@ -1,7 +1,7 @@
 import './Miku.less'
 import Part from "./Part";
 import {useEffect, useRef, useState} from "react";
-import {physicsScaleY,physicsRotation,getConfig,getAbsolutePos,rotateVec,toAbsolute,toRelative} from "../Engine/modelUtils";
+import {physicsScaleY,physicsRotation,getConfig,getAbsolutePos} from "../Engine/modelUtils";
 import {getInitPhysics, parseConfig, updatePhysics} from "../Engine/core";
 
 /*
@@ -565,129 +565,30 @@ const defaultConfig={
 //const mockConfig=safeEval(mockcfgstring,{physicsScaleY,physicsRotation,getConfig,getAbsolutePos,rotateVec,toAbsolute,toRelative});
 
 export default function Miku(props){
-    const {control,timestamp}=props;
+    const {control,timestamp,config=defaultConfig}=props;
     const lastTime=useRef(performance.now());
-    const [physics,setPhysics]=useState({});
-    // eslint-disable-next-line no-unused-vars
-    const [debugPoint,setDebugPoint]=useState();
-    const currentConfig=useRef({});
-    let config=parseConfig(defaultConfig,control,physics);
-    // const applyPhysics=(_config,currentPath,physics)=>{
-    //     if(_config.massX!==undefined&&_config.massY!==undefined){
-    //         const absPos=getAbsolutePos(config,currentPath);
-    //         _config.rotation=(physics[currentPath]?.rotation-absPos.rotation)??_config.rotation;
-    //         _config.scaleY=physics[currentPath]?.scaleY??_config.scaleY;
-    //     }
-    //     _config.components?.forEach(o=>{
-    //         applyPhysics(o,(currentPath?currentPath+'.':'')+o.id,physics);
-    //     });
-    // }
-    // applyPhysics(config,undefined,physics);
-    currentConfig.current=config;
-    useEffect(()=>{
-        setPhysics(getInitPhysics(config));
-    },[]);
+    const [physics,setPhysics]=useState();
+    const [renderState,setRenderState]=useState(config);
 
     const work=(timestamp)=> {
         const dt = timestamp - lastTime.current;
         //console.log(timestamp,dt);
         lastTime.current = timestamp;
+        let currentRenderState=parseConfig(config,control,physics);
+        setRenderState(currentRenderState);
         if(dt>1000||dt<=0)return;
+        if(!physics)
+            setPhysics(getInitPhysics(currentRenderState));
         setPhysics(physics => {
-            return updatePhysics(physics,currentConfig.current,dt);
-            // let newPhysics = physics;
-            // Object.entries(physics).forEach(([currentPath, phy]) => {
-            //     const config = getConfig(currentConfig.current, currentPath);
-            //     const absPos = getAbsolutePos(currentConfig.current, currentPath);
-            //     //console.log(currentPath,phy.px,phy.py,phy.vx,phy.vy,absPos);
-            //     // 确定加速度
-            //     const ax = config.gravityX;
-            //     const ay = config.gravityY;
-            //     // 确定无束缚速度
-            //     let vx = phy.vx + ax * dt;
-            //     let vy = phy.vy + ay * dt;
-            //     if (config.damp) {
-            //         vx *= 1-config.damp*dt;
-            //         vy *= 1-config.damp*dt;
-            //     }
-            //     // 确定无束缚绝对位置
-            //     let px = phy.px + vx * dt;
-            //     let py = phy.py + vy * dt;
-            //     // 确定无束缚相对位置
-            //     const rp = toRelative(px, py, absPos);
-            //     let rpx = rp.x;
-            //     let rpy = rp.y;
-            //     // 回收到束缚圆内
-            //     let ratio = Math.sqrt((rpx * rpx + rpy * rpy) / (config.massX * config.massX + config.massY * config.massY));
-            //     if (ratio > 1) {
-            //         rpx /= ratio;
-            //         rpy /= ratio;
-            //         ratio = 1;
-            //     }
-            //     if(config.rotationMin!==undefined&&config.rotationMax!==undefined){
-            //         const selfPos=absPos;
-            //
-            //         const newP = toAbsolute(rpx, rpy, absPos);
-            //         const dx=selfPos?.x-newP.x;
-            //         const dy=selfPos?.y-newP.y;
-            //         const absoluteRotation= Math.atan2(dy,dx)/Math.PI*180+90;
-            //         const parentPath=currentPath.split('.').slice(0,-1).join('.');
-            //         const parentRotation=getAbsolutePos(currentConfig.current,parentPath)?.rotation;
-            //         const relativeRotation=absoluteRotation-parentRotation;
-            //         //console.log(rpx,rpy)
-            //
-            //         // let newRotation=Math.atan2(rpy,rpx)*180/Math.PI-90;
-            //         // const parentPath=currentPath.split('.').slice(0,-1).join('.');
-            //         // const parentRotation=getAbsolutePos(currentConfig.current,parentPath)?.rotation;
-            //         // const relativeRotation=newRotation-parentRotation;
-            //         //console.log(newRotation);
-            //         let rot=0;
-            //         if(relativeRotation<config.rotationMin){
-            //             rot=config.rotationMin-relativeRotation;
-            //         }else if (relativeRotation>config.rotationMax){
-            //             rot=config.rotationMax-relativeRotation;
-            //         }
-            //         // console.log(rot);
-            //         const newRP=rotateVec(rpx,rpy,rot);
-            //         rpx=newRP.x;
-            //         rpy=newRP.y;
-            //         //if(rot!==0)debugger;
-            //     }
-            //     // 计算真实位置和真实速度
-            //     const newP = toAbsolute(rpx, rpy, absPos);
-            //     vx = (newP.x - phy.px) / dt;
-            //     vy = (newP.y - phy.py) / dt;
-            //     px = newP.x;
-            //     py = newP.y;
-            //     newPhysics[currentPath] = {
-            //         vx, vy, px, py,
-            //     }
-            // })
-            // // console.log(newPhysics);
-            // setNotifier(timestamp);
-            // return newPhysics;
+            return updatePhysics(physics,currentRenderState,dt);
         })
     }
     useEffect(()=> {
         work(timestamp);
     },[timestamp]);
 
-    // useEffect(()=>{console.log(physics)},[physics]);
-    // if(debugPoint){
-    //     config.components.push(
-    //         {
-    //             id:'debugger',
-    //             resourceCenterX:400,
-    //             resourceCenterY:300,
-    //             x:debugPoint.x,
-    //             y:debugPoint.y,
-    //             resource:"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' version='1.1' xmlns:xlink='http://www.w3.org/1999/xlink' preserveAspectRatio='none' x='0px' y='0px' width='800px' height='600px' viewBox='-400 -300 800 600'%3e %3cdefs%3e %3cg id='Miku_parts_Arm_L_0_Layer0_0_FILL'%3e %3cpath fill='%23FF0000' stroke='none' d=' M 8.6 -14.4 L 8.1 -14.9 -8.2 -15 -8.65 -14.55 Q -8.65 -4.45 -3 4 -2.6 4.6 -1.8 4.85 1.15 6.15 3.25 4.1 5.85 1.6 7.3 -1.8 7.65 -3.75 8.1 -6.15 8.45 -9.2 8.6 -14.4 Z'/%3e %3cpath fill='%2353B5B5' stroke='none' d=' M 7.6 -17.9 L 4.7 -17.65 -0.2 -17.15 -5.15 -17.55 -7.85 -17.55 -8.2 -15 8.1 -14.9 8.6 -14.4 Q 8.6 -15.1 8.6 -15.9 L 7.6 -17.9 Z'/%3e %3cpath fill='%23FFDBC4' stroke='none' d=' M 4.7 -17.65 Q 5.2 -19.8 3.5 -21.15 1.15 -22.95 -2.05 -22.05 -5.4 -20.95 -5.15 -17.55 L -0.2 -17.15 4.7 -17.65 Z'/%3e %3c/g%3e %3cg id='Miku_parts_Arm_L_0_Layer0_1_FILL'%3e %3cpath fill='%23407373' stroke='none' d=' M -3.85 -11.5 Q -3.95 -11.2 -3.95 -10.9 -4.05 -8.6 -4 -6.3 -4 -5.6 -3.9 -4.85 -3.85 -4.45 -3.7 -4 L -2.9 -4.05 Q -2.8 -6.6 -2.9 -9.1 -2.95 -10.55 -3.5 -11.75 L -3.85 -11.5 M -1.5 -12.15 L -1.8 -11.8 -2.1 -4.3 -1.15 -4.35 Q -0.8 -7.85 -1.35 -11.6 -1.4 -11.9 -1.5 -12.15 Z'/%3e %3cpath fill='%23556680' stroke='none' d=' M 0.15 -12.3 Q 0.55 -12.25 0.5 -12.75 -2.25 -13.5 -5.15 -12.95 -5.4 -12.9 -5.6 -12.8 -5.8 -12.2 -5.8 -11.6 -5.85 -10.35 -5.7 -9.1 -5.45 -6.9 -5.55 -4.8 -5.7 -2.65 -4.5 -1.15 L 0.5 -1.75 -0.5 -11.3 Q -1.1 -6.9 -0.25 -2.5 L -4 -2.3 -5 -12.3 Q -2.45 -12.3 0.15 -12.3 Z'/%3e %3c/g%3e %3c/defs%3e %3cg transform='matrix( -1%2c 0%2c 0%2c 1%2c -0.1%2c0) '%3e %3cg transform='matrix( 1%2c 0%2c 0%2c 1%2c 0%2c0) '%3e %3cuse xlink:href='%23Miku_parts_Arm_L_0_Layer0_0_FILL'/%3e %3c/g%3e %3cg transform='matrix( 1%2c 0%2c 0%2c 1%2c 0%2c0) '%3e %3cuse xlink:href='%23Miku_parts_Arm_L_0_Layer0_1_FILL'/%3e %3c/g%3e %3c/g%3e %3c/svg%3e"
-    //         },)
-    // }
-    //console.log(getConfig(config,'head.ahoge'))
-
     return <div className="miku">
         {/*<div className="debug">{JSON.stringify(control)}</div>*/}
-        <Part config={config} physics={physics}></Part>
+        <Part renderState={renderState}></Part>
     </div>
 }

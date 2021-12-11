@@ -1,5 +1,5 @@
 import {physicsScaleY,physicsRotation,getConfig,getAbsolutePos,rotateVec,toAbsolute,toRelative} from "./modelUtils";
-export const parseConfig= (o,control,physics)=> {
+export const parseConfig= (o,control,physics={})=> {
     const root=o;
     let modified=false;
     let remain=false;
