@@ -6,8 +6,18 @@ import {useEffect, useRef, useState} from "react";
 import {getAbsolutePos, getConfig, parseModelJS, physicsRotation, physicsScaleY} from "./Engine/modelUtils";
 
 const defaultConfig= {
-    getControl : ({mouseX, mouseY}={mouseX:400,mouseY:300}) => {
-        let control = {x: (mouseX - W / 2) / W, y: (mouseY - H / 2) / H, mouseX, mouseY};
+    parseControl : (_control={
+        mouseX:400,
+        mouseY:300,
+        mouthType:"happy",
+        mouth:1,
+    }) => {
+        const {mouseX,mouseY}=_control;
+        let control = {
+            ..._control,
+            x: (mouseX - W / 2) / W,
+            y: (mouseY - H / 2) / H
+        };
 
         control.x = Math.atan(control.x * 4) / Math.PI * 2;
         control.y = Math.atan(control.y * 4) / Math.PI * 2;
@@ -25,9 +35,6 @@ const defaultConfig= {
         control = {...control, right, fwd, side_ang, fwd_ang, side_sin, side_cos, fwd_sin, fwd_cos, lean};
         //console.log(control);
         return control;
-    },
-    control:{
-
     },
     model: {
         id: 'root',
@@ -1229,7 +1236,7 @@ function App() {
     const [timestamp, setTimestamp] = useState(performance.now());
 
 
-    const [control, setControl] = useState(defaultConfig.getControl());
+    const [control, setControl] = useState(defaultConfig.parseControl());
     useEffect(() => {
         let lastTime = performance.now();
         let canceled = false;
@@ -1244,8 +1251,8 @@ function App() {
                 const easeX = control.mouseX * (1 - ratio) + x * ratio;
                 const easeY = control.mouseY * (1 - ratio) + y * ratio;
                 const distance = Math.sqrt((easeX - control.mouseX) * (easeX - control.mouseX) + (easeY - control.mouseY) * (easeY - control.mouseY))
-                if (distance < 1) return defaultConfig.getControl({mouseX:x, mouseY:y});
-                return defaultConfig.getControl({mouseX:easeX, mouseY:easeY});
+                if (distance < 1) return defaultConfig.parseControl({...control,mouseX:x, mouseY:y});
+                return defaultConfig.parseControl({...control,mouseX:easeX, mouseY:easeY});
             })
             setTimestamp(timestamp);
             requestAnimationFrame(updateControl);
