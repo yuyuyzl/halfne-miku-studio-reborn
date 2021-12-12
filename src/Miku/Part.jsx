@@ -1,4 +1,5 @@
 export default function Part({renderState}){
+    if (!renderState)return null;
     const {id,x,y,components,resource,resourceCenterX,resourceCenterY,rotation,virtual,scaleY}=renderState;
     if(virtual)return null;
     return <div data-id={id} style={{
