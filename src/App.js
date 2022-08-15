@@ -3,44 +3,55 @@ import Miku from "./Miku/Miku";
 import {useEffect, useRef, useState} from "react";
 
 import {getAbsolutePos, getConfig, parseModelJS, physicsRotation, physicsScaleY} from "./Engine/modelUtils";
-import {Box, Checkbox, FormControlLabel, FormGroup, Tab, Tabs, ToggleButton, ToggleButtonGroup} from "@mui/material";
+import {
+    Box,
+    Button,
+    Checkbox,
+    FormControlLabel,
+    FormGroup,
+    Tab,
+    Tabs,
+    ToggleButton,
+    ToggleButtonGroup
+} from "@mui/material";
+import FiberManualRecord from "@mui/icons-material/FiberManualRecord";
 
-const defaultConfig= {
-    defaultKeyMapping:[
-        ['EyeHappy','1'],
-        ['EyeJaded','2'],
-        ['EyeO_O','3'],
-        ['Eye*_*','4'],
-        ['Eye@_@','5'],
-        ['EyeSideGlance','6'],
-        ['EyeEheh','7'],
-        ['EyePumped','8'],
-        ['EyeBlink','x'],
-        ['MouthAA','a'],
-        ['MouthEE','d'],
-        ['MouthOO','w'],
-        ['MouthEH','s'],
-        ['MouthOH','e'],
-        ['MouthTeeth','q'],
-        ['MouthHappy','F1'],
-        ['MouthNeutral','F2'],
-        ['MouthCat','F3'],
-        ['MouthAngry','F4'],
-        ['MouthPout','F5'],
-        ['MouthDrool','F6'],
-        ['MouthDuck','F7'],
-        ['MouthTongue','F8'],
+const defaultConfig = {
+    defaultKeyMapping: [
+        ['EyeHappy', '1'],
+        ['EyeJaded', '2'],
+        ['EyeO_O', '3'],
+        ['Eye*_*', '4'],
+        ['Eye@_@', '5'],
+        ['EyeSideGlance', '6'],
+        ['EyeEheh', '7'],
+        ['EyePumped', '8'],
+        ['EyeBlink', 'x'],
+        ['MouthAA', 'a'],
+        ['MouthEE', 'd'],
+        ['MouthOO', 'w'],
+        ['MouthEH', 's'],
+        ['MouthOH', 'e'],
+        ['MouthTeeth', 'q'],
+        ['MouthHappy', 'F1'],
+        ['MouthNeutral', 'F2'],
+        ['MouthCat', 'F3'],
+        ['MouthAngry', 'F4'],
+        ['MouthPout', 'F5'],
+        ['MouthDrool', 'F6'],
+        ['MouthDuck', 'F7'],
+        ['MouthTongue', 'F8'],
     ],
-    parseControl : (_control={
-        mouseX:400,
-        mouseY:300,
-        mouthType:"happy",
-        mouth:1,
-        eyeType:"happy",
-        eyeOpen:'o',
-        keyInput:[]
+    parseControl: (_control = {
+        mouseX: 400,
+        mouseY: 300,
+        mouthType: "happy",
+        mouth: 1,
+        eyeType: "happy",
+        eyeOpen: 'o',
+        keyInput: []
     }) => {
-        const {mouseX,mouseY,keyInput}=_control;
+        const {mouseX, mouseY, keyInput} = _control;
         let control = {
             ..._control,
             x: (mouseX - W / 2) / W,
@@ -61,78 +72,78 @@ const defaultConfig= {
         const fwd_cos = Math.cos(fwd_ang);
         const lean = 1 - (.5 - fwd_sin * .5) * side_cos;
 
-        control.mouth=1;
-        control.eyeOpen='o';
-        keyInput.forEach(o=>{
-            switch (o){
+        control.mouth = 1;
+        control.eyeOpen = 'o';
+        keyInput.forEach(o => {
+            switch (o) {
                 case 'EyeHappy':
-                    control.eyeType='happy';
+                    control.eyeType = 'happy';
                     break;
                 case 'EyeJaded':
-                    control.eyeType='jaded';
+                    control.eyeType = 'jaded';
                     break;
                 case 'EyeO_O':
-                    control.eyeType='oo';
+                    control.eyeType = 'oo';
                     break;
                 case 'Eye*_*':
-                    control.eyeType='xx';
+                    control.eyeType = 'xx';
                     break;
                 case 'Eye@_@':
-                    control.eyeType='aa';
+                    control.eyeType = 'aa';
                     break;
                 case 'EyeSideGlance':
-                    control.eyeType='sideglance';
+                    control.eyeType = 'sideglance';
                     break;
                 case 'EyeEheh':
-                    control.eyeType='eheh';
+                    control.eyeType = 'eheh';
                     break;
                 case 'EyePumped':
-                    control.eyeType='pumped';
+                    control.eyeType = 'pumped';
                     break;
                 case 'EyeBlink':
-                    control.eyeOpen='c';
+                    control.eyeOpen = 'c';
                     break;
                 case 'MouthAA':
-                    control.mouth=2;
+                    control.mouth = 2;
                     break;
                 case 'MouthEE':
-                    control.mouth=3;
+                    control.mouth = 3;
                     break;
                 case 'MouthOO':
-                    control.mouth=4;
+                    control.mouth = 4;
                     break;
                 case 'MouthEH':
-                    control.mouth=5;
+                    control.mouth = 5;
                     break;
                 case 'MouthOH':
-                    control.mouth=6;
+                    control.mouth = 6;
                     break;
                 case 'MouthTeeth':
-                    control.mouth=7;
+                    control.mouth = 7;
                     break;
                 case 'MouthHappy':
-                    control.mouthType='happy';
+                    control.mouthType = 'happy';
                     break;
                 case 'MouthNeutral':
-                    control.mouthType='neutral';
+                    control.mouthType = 'neutral';
                     break;
                 case 'MouthCat':
-                    control.mouthType='cat';
+                    control.mouthType = 'cat';
                     break;
                 case 'MouthAngry':
-                    control.mouthType='angry';
+                    control.mouthType = 'angry';
                     break;
                 case 'MouthPout':
-                    control.mouthType='pout';
+                    control.mouthType = 'pout';
                     break;
                 case 'MouthDrool':
-                    control.mouthType='drool';
+                    control.mouthType = 'drool';
                     break;
                 case 'MouthDuck':
-                    control.mouthType='duck';
+                    control.mouthType = 'duck';
                     break;
                 case 'MouthTongue':
-                    control.mouthType='tongue';
+                    control.mouthType = 'tongue';
                     break;
             }
         });
@@ -537,7 +548,8 @@ const defaultConfig= {
                         x: -5.65,
                         y: -22.9,
                         components: [
-                            {id:'eyes',
+                            {
+                                id: 'eyes',
                                 width: 800,
                                 height: 600,
                                 resourceCenterX: 400,
@@ -564,7 +576,8 @@ const defaultConfig= {
                                         "xxo": "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' version='1.1' xmlns:xlink='http://www.w3.org/1999/xlink' preserveAspectRatio='none' x='0px' y='0px' width='800px' height='600px' viewBox='-400 -300 800 600'%3e %3cdefs%3e %3cg id='Layer1_0_FILL'%3e %3cpath fill='%23FF88F3' stroke='none' d=' M 26.5 -25.25 Q 26.4 -26 26.4 -26.65 L 26.25 -28.15 Q 26.1 -26.45 26 -24.7 25.95 -24.3 25.9 -23.85 24.95 -16.65 22.8 -10.3 L 22.55 -9.7 Q 22.35 -9.15 22.1 -8.45 22 -8.3 21.85 -8.05 21.2 -7.3 20.55 -6.55 16.65 -3.1 8.7 -1.25 8.9 -1.25 9.15 -1.2 8.9 -1.15 8.7 -1.15 16.7 0.75 20.65 4.3 21.25 4.9 21.85 5.6 22 5.85 22.1 6.15 L 26.25 25.75 30.25 6.6 Q 30.3 6.4 30.4 6.2 30.5 5.85 30.65 5.6 31.25 4.9 31.9 4.25 35.85 0.75 43.75 -1.15 43.6 -1.15 43.35 -1.2 43.6 -1.25 43.75 -1.25 35.85 -3.15 31.9 -6.65 31.25 -7.3 30.65 -8.05 30.5 -8.3 30.45 -8.45 30.1 -9.25 29.8 -10.1 L 26.5 -25.25 Z'/%3e %3c/g%3e %3cg id='Layer1_0_MEMBER_0_FILL'%3e %3cpath fill='white' stroke='none' d=' M 13.05 -1.25 Q 13.2 -1.25 13.4 -1.2 13.2 -1.15 13.05 -1.15 19.05 0.3 22 3 22.45 3.45 22.9 4 23 4.2 23.1 4.4 L 26.2 19.35 29.2 4.75 Q 29.25 4.6 29.3 4.45 29.4 4.2 29.5 4 29.95 3.45 30.45 2.95 33.4 0.3 39.35 -1.15 39.2 -1.15 39.05 -1.2 39.2 -1.25 39.35 -1.25 33.4 -2.7 30.45 -5.35 29.95 -5.85 29.5 -6.4 29.4 -6.6 29.35 -6.75 29.1 -7.35 28.85 -8 L 26.4 -19.55 Q 26.3 -20.1 26.3 -20.65 L 26.2 -21.75 Q 26.1 -20.45 26 -19.15 25.95 -18.85 25.9 -18.5 25.25 -13 23.6 -8.15 L 23.45 -7.7 Q 23.25 -7.25 23.1 -6.75 23 -6.6 22.9 -6.4 22.4 -5.85 21.95 -5.3 19 -2.65 13.05 -1.25 Z'/%3e %3c/g%3e %3cg id='Layer1_1_FILL'%3e %3cpath fill='%23FF88F3' stroke='none' d=' M -43.8 -1.25 Q -43.6 -1.25 -43.35 -1.2 -43.6 -1.15 -43.8 -1.15 -35.8 0.75 -31.85 4.3 -31.25 4.9 -30.65 5.6 -30.5 5.85 -30.4 6.15 L -26.25 25.75 -22.25 6.6 Q -22.2 6.4 -22.1 6.2 -22 5.85 -21.85 5.6 -21.25 4.9 -20.6 4.25 -16.65 0.75 -8.75 -1.15 -8.9 -1.15 -9.15 -1.2 -8.9 -1.25 -8.75 -1.25 -16.65 -3.15 -20.6 -6.65 -21.25 -7.3 -21.85 -8.05 -22 -8.3 -22.05 -8.45 -22.4 -9.25 -22.7 -10.1 L -26 -25.25 Q -26.1 -26 -26.1 -26.65 L -26.25 -28.15 Q -26.4 -26.45 -26.5 -24.7 -26.55 -24.3 -26.6 -23.85 -27.55 -16.65 -29.7 -10.3 L -29.95 -9.7 Q -30.15 -9.15 -30.4 -8.45 -30.5 -8.3 -30.65 -8.05 -31.3 -7.3 -31.95 -6.55 -35.85 -3.1 -43.8 -1.25 Z'/%3e %3c/g%3e %3cg id='Layer1_1_MEMBER_0_FILL'%3e %3cpath fill='white' stroke='none' d=' M -26.2 -20.65 L -26.3 -21.75 Q -26.4 -20.45 -26.5 -19.15 -26.55 -18.85 -26.6 -18.5 -27.25 -13 -28.9 -8.15 L -29.05 -7.7 Q -29.25 -7.25 -29.4 -6.75 -29.5 -6.6 -29.6 -6.4 -30.1 -5.85 -30.55 -5.3 -33.5 -2.65 -39.45 -1.25 -39.3 -1.25 -39.1 -1.2 -39.3 -1.15 -39.45 -1.15 -33.45 0.3 -30.5 3 -30.05 3.45 -29.6 4 -29.5 4.2 -29.4 4.4 L -26.3 19.35 -23.3 4.75 Q -23.25 4.6 -23.2 4.45 -23.1 4.2 -23 4 -22.55 3.45 -22.05 2.95 -19.1 0.3 -13.15 -1.15 -13.3 -1.15 -13.45 -1.2 -13.3 -1.25 -13.15 -1.25 -19.1 -2.7 -22.05 -5.35 -22.55 -5.85 -23 -6.4 -23.1 -6.6 -23.15 -6.75 -23.4 -7.35 -23.65 -8 L -26.1 -19.55 Q -26.2 -20.1 -26.2 -20.65 Z'/%3e %3c/g%3e %3c/defs%3e %3cg transform='matrix( 1%2c 0%2c 0%2c 1%2c 0%2c0) '%3e %3cuse xlink:href='%23Layer1_0_FILL'/%3e %3c/g%3e %3cg transform='matrix( 1%2c 0%2c 0%2c 1%2c 0%2c0) '%3e %3cuse xlink:href='%23Layer1_0_MEMBER_0_FILL'/%3e %3c/g%3e %3cg transform='matrix( 1%2c 0%2c 0%2c 1%2c 0%2c0) '%3e %3cuse xlink:href='%23Layer1_1_FILL'/%3e %3c/g%3e %3cg transform='matrix( 1%2c 0%2c 0%2c 1%2c 0%2c0) '%3e %3cuse xlink:href='%23Layer1_1_MEMBER_0_FILL'/%3e %3c/g%3e %3c/svg%3e"
                                     }
                                     return mouthData[control.eyeType + control.eyeOpen] || mouthData.happyo;
-                                }},
+                                }
+                            },
                             {
                                 id: 'facered',
                                 width: 800,
@@ -1361,28 +1374,32 @@ const defaultConfig= {
 const W = 800;
 const H = 600;
 
-let waitUntilNextFrame=requestAnimationFrame;
+let waitUntilNextFrame = requestAnimationFrame;
 
 function App() {
     const stageRef = useRef();
     const latestMousePos = useRef([400, 300]);
     const [timestamp, setTimestamp] = useState(performance.now());
 
-    const [config,setConfig] = useState(defaultConfig);
+    const [config, setConfig] = useState(defaultConfig);
 
     const [control, setControl] = useState(config.parseControl());
     const [keyMapping, setKeyMapping] = useState(config.defaultKeyMapping);
 
-    const [checked,setChecked]=useState(false);
-    const [fps,setFps]=useState(0);
+    const [checked, setChecked] = useState(false);
+    const [fps, setFps] = useState(0);
 
-    const [tabPage,setTabPage]=useState(0);
+    const [tabPage, setTabPage] = useState(0);
+
+    const [isRecording, setIsRecording] = useState(false);
 
     const parseKeyMapping = (keyList, keyMapping) =>
         keyList.map(o => keyMapping.filter(([k, v]) => v === o).map(([k, v]) => k))
             .reduce((p, c) => [...p, ...c], [])
 
-    useEffect(()=>{waitUntilNextFrame=fps?(f=>setTimeout(f,1000/fps)):requestAnimationFrame},[fps]);
+    useEffect(() => {
+        waitUntilNextFrame = fps ? (f => setTimeout(f, 1000 / fps)) : requestAnimationFrame
+    }, [fps]);
 
     useEffect(() => {
         if (!window.keyList) window.keyList = []
@@ -1453,26 +1470,27 @@ function App() {
             </div>
             <div className="controls">
                 {/*<FormControlLabel control={<Checkbox checked={checked} onChange={e=>setChecked(e.target.checked)}/>} label="Label"/>*/}
-                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <Tabs value={tabPage} onChange={(e,v)=>setTabPage(v)} aria-label="basic tabs example">
-                        <Tab label="Control" />
-                        <Tab label="Info" />
-                        <Tab label="Background" />
-                        <Tab label="Settings" />
+                <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
+                    <Tabs value={tabPage} onChange={(e, v) => setTabPage(v)} aria-label="basic tabs example">
+                        <Tab label="Control"/>
+                        <Tab label="Info"/>
+                        <Tab label="Background"/>
+                        <Tab label="Settings"/>
                     </Tabs>
                 </Box>
 
-                {tabPage===0&&<div className='controls-panel'>
-
+                {tabPage === 0 && <div className='controls-panel'>
+                    <ToggleButton onChange={() => setIsRecording(!isRecording)}
+                                  selected={isRecording}><FiberManualRecord/></ToggleButton>
                 </div>}
-                {tabPage===1&&<div className='controls-panel'>
-                    {Object.entries(control).map(([k,v])=><div><b>{k}</b>: {v}</div>)}
+                {tabPage === 1 && <div className='controls-panel'>
+                    {Object.entries(control).map(([k, v]) => <div><b>{k}</b>: {v}</div>)}
                 </div>}
-                {tabPage===3&&<div className='controls-panel'>
+                {tabPage === 3 && <div className='controls-panel'>
                     <ToggleButtonGroup
                         value={fps}
                         exclusive
-                        onChange={(e, v) => setFps(v||0)}
+                        onChange={(e, v) => setFps(v || 0)}
                         label="FPS Limit"
                     >
                         <ToggleButton value={0} aria-label="OFF">
