@@ -2,8 +2,8 @@ import './App.less';
 import Miku from "./Miku/Miku";
 import {useEffect, useRef, useState} from "react";
 
-
 import {getAbsolutePos, getConfig, parseModelJS, physicsRotation, physicsScaleY} from "./Engine/modelUtils";
+import {Box, Checkbox, FormControlLabel, FormGroup, Tab, Tabs, ToggleButton, ToggleButtonGroup} from "@mui/material";
 
 const defaultConfig= {
     defaultKeyMapping:[
@@ -1361,37 +1361,47 @@ const defaultConfig= {
 const W = 800;
 const H = 600;
 
-
+let waitUntilNextFrame=requestAnimationFrame;
 
 function App() {
     const stageRef = useRef();
     const latestMousePos = useRef([400, 300]);
     const [timestamp, setTimestamp] = useState(performance.now());
 
+    const [config,setConfig] = useState(defaultConfig);
 
-    const [control, setControl] = useState(defaultConfig.parseControl());
-    const [keyMapping,setKeyMapping]=useState(defaultConfig.defaultKeyMapping);
+    const [control, setControl] = useState(config.parseControl());
+    const [keyMapping, setKeyMapping] = useState(config.defaultKeyMapping);
 
-    const parseKeyMapping=(keyList,keyMapping)=>
-        keyList.map(o=>keyMapping.filter(([k,v])=>v===o).map(([k,v])=>k))
-            .reduce((p,c)=>[...p,...c],[])
+    const [checked,setChecked]=useState(false);
+    const [fps,setFps]=useState(0);
+
+    const [tabPage,setTabPage]=useState(0);
+
+    const parseKeyMapping = (keyList, keyMapping) =>
+        keyList.map(o => keyMapping.filter(([k, v]) => v === o).map(([k, v]) => k))
+            .reduce((p, c) => [...p, ...c], [])
+
+    useEffect(()=>{waitUntilNextFrame=fps?(f=>setTimeout(f,1000/fps)):requestAnimationFrame},[fps]);
+
     useEffect(() => {
-        if(!window.keyList)window.keyList=[]
-        const keyboardHandler=e=>{
-            if(e.type==='keydown'){
-                if(!window.keyList.includes(e.key))window.keyList.push(e.key);
-            }else {
-                window.keyList=window.keyList.filter(o=>o!==e.key);
+        if (!window.keyList) window.keyList = []
+        const keyboardHandler = e => {
+            if (e.type === 'keydown') {
+                if (!window.keyList.includes(e.key)) window.keyList.push(e.key);
+            } else {
+                window.keyList = window.keyList.filter(o => o !== e.key);
             }
             e.preventDefault();
             console.log(window.keyList);
         };
-        window.addEventListener('keydown',keyboardHandler);
-        window.addEventListener('keyup',keyboardHandler);
+        window.addEventListener('keydown', keyboardHandler);
+        window.addEventListener('keyup', keyboardHandler);
         let lastTime = performance.now();
         let canceled = false;
-        const updateControl = (timestamp) => {
+        const updateControl = (timestamp = Date.now()) => {
             if (canceled) return;
+
             const dt = timestamp - lastTime;
             lastTime = timestamp;
             setControl(control => {
@@ -1401,17 +1411,22 @@ function App() {
                 const easeX = control.mouseX * (1 - ratio) + x * ratio;
                 const easeY = control.mouseY * (1 - ratio) + y * ratio;
                 const distance = Math.sqrt((easeX - control.mouseX) * (easeX - control.mouseX) + (easeY - control.mouseY) * (easeY - control.mouseY))
-                const keyInput=parseKeyMapping(window.keyList,keyMapping);
-                if (distance < 1) return defaultConfig.parseControl({...control,mouseX:x, mouseY:y,keyInput:keyInput});
-                return defaultConfig.parseControl({...control,mouseX:easeX, mouseY:easeY,keyInput:keyInput});
+                const keyInput = parseKeyMapping(window.keyList, keyMapping);
+                if (distance < 1) return config.parseControl({
+                    ...control,
+                    mouseX: x,
+                    mouseY: y,
+                    keyInput: keyInput
+                });
+                return config.parseControl({...control, mouseX: easeX, mouseY: easeY, keyInput: keyInput});
             })
             setTimestamp(timestamp);
-            requestAnimationFrame(updateControl);
+            waitUntilNextFrame(updateControl);
         }
-        requestAnimationFrame(updateControl);
+        waitUntilNextFrame(updateControl);
         return () => {
-            window.removeEventListener('keydown',keyboardHandler);
-            window.removeEventListener('keyup',keyboardHandler);
+            window.removeEventListener('keydown', keyboardHandler);
+            window.removeEventListener('keyup', keyboardHandler);
             canceled = true;
         }
     }, []);
@@ -1434,7 +1449,46 @@ function App() {
                     handleMouseMove(e.touches?.[0]);
                 }}
             >
-                <Miku control={control} timestamp={timestamp} model={defaultConfig.model}></Miku>
+                <Miku control={control} timestamp={timestamp} model={config.model}></Miku>
+            </div>
+            <div className="controls">
+                {/*<FormControlLabel control={<Checkbox checked={checked} onChange={e=>setChecked(e.target.checked)}/>} label="Label"/>*/}
+                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <Tabs value={tabPage} onChange={(e,v)=>setTabPage(v)} aria-label="basic tabs example">
+                        <Tab label="Control" />
+                        <Tab label="Info" />
+                        <Tab label="Background" />
+                        <Tab label="Settings" />
+                    </Tabs>
+                </Box>
+
+                {tabPage===0&&<div className='controls-panel'>
+
+                </div>}
+                {tabPage===1&&<div className='controls-panel'>
+                    {Object.entries(control).map(([k,v])=><div><b>{k}</b>: {v}</div>)}
+                </div>}
+                {tabPage===3&&<div className='controls-panel'>
+                    <ToggleButtonGroup
+                        value={fps}
+                        exclusive
+                        onChange={(e, v) => setFps(v||0)}
+                        label="FPS Limit"
+                    >
+                        <ToggleButton value={0} aria-label="OFF">
+                            OFF
+                        </ToggleButton>
+                        <ToggleButton value={30} aria-label="30 FPS">
+                            30 FPS
+                        </ToggleButton>
+                        <ToggleButton value={60} aria-label="60 FPS">
+                            60 FPS
+                        </ToggleButton>
+                        <ToggleButton value={120} aria-label="120 FPS">
+                            120 FPS
+                        </ToggleButton>
+                    </ToggleButtonGroup>
+                </div>}
             </div>
         </div>
     );

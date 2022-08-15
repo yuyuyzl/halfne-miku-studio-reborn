@@ -26,7 +26,6 @@ export default function Miku(props){
     useEffect(()=> {
         work(timestamp);
     },[timestamp]);
-
     return <div className="miku">
         {/*<div className="debug">{JSON.stringify(control)}</div>*/}
         <Part renderState={renderState}></Part>
