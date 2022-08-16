@@ -1260,6 +1260,8 @@ const H = 600;
 
 let waitUntilNextFrame = requestAnimationFrame;
 
+const formatTime=(millis)=>Math.floor(millis/1000/60)+':'+('00'+Math.floor(millis/1000%60)).slice(-2);
+
 function App() {
     const stageRef = useRef();
     const latestMousePos = useRef([W/2, H/2]);
@@ -1276,6 +1278,8 @@ function App() {
     const [tabPage, setTabPage] = useState(0);
 
     const [playType,setPlayType]=useState(0);
+    const [playTypeChangeTime,setPlayTypeChangeTime]=useState();
+    const [currentFrame,setCurrentFrame]=useState();
     const [record,setRecord]=useState([]);
     const [mikuResetter,setMikuResetter]=useState(0);
 
@@ -1293,55 +1297,92 @@ function App() {
     }, [fps]);
 
     useEffect(() => {
-        if (!window.keyList) window.keyList = []
-        const keyboardHandler = e => {
-            if (e.type === 'keydown') {
-                if (!window.keyList.includes(e.key)) window.keyList.push(e.key);
-            } else {
-                window.keyList = window.keyList.filter(o => o !== e.key);
+        if(playType===0||playType===-1) {
+            if (!window.keyList) window.keyList = []
+            const keyboardHandler = e => {
+                if (e.type === 'keydown') {
+                    if (!window.keyList.includes(e.key)) window.keyList.push(e.key);
+                } else {
+                    window.keyList = window.keyList.filter(o => o !== e.key);
+                }
+                e.preventDefault();
+                console.log(window.keyList);
+            };
+            window.addEventListener('keydown', keyboardHandler);
+            window.addEventListener('keyup', keyboardHandler);
+            let lastTime = performance.now();
+            let canceled = false;
+            const updateControl = (timestamp = performance.now()) => {
+                if (canceled) return;
+                const dt = timestamp - lastTime;
+                lastTime = timestamp;
+                setControl(control => {
+                    const x = latestMousePos.current[0];
+                    const y = latestMousePos.current[1];
+                    const ratio = Math.min(0.02 * dt, 1);
+                    const easeX = control.mouseX * (1 - ratio) + x * ratio;
+                    const easeY = control.mouseY * (1 - ratio) + y * ratio;
+                    const distance = Math.sqrt((easeX - control.mouseX) * (easeX - control.mouseX) + (easeY - control.mouseY) * (easeY - control.mouseY))
+                    const keyInput = parseKeyMapping(window.keyList, keyMapping);
+                    const rawControl = (distance < 1) ? {
+                        mouseX: x, mouseY: y, keyInput: keyInput
+                    } : {mouseX: easeX, mouseY: easeY, keyInput: keyInput};
+                    if (playType === -1) {
+                        console.log(timestamp);
+                        setRecord(record => [
+                                ...record,
+                                {
+                                    timestamp: timestamp - playTypeChangeTime,
+                                    rawControl
+                                }
+                            ]
+                        )
+                    }
+                    return config.parseControl({...control, ...rawControl});
+                })
+                setTimestamp(timestamp);
+                waitUntilNextFrame(updateControl);
             }
-            e.preventDefault();
-            console.log(window.keyList);
-        };
-        window.addEventListener('keydown', keyboardHandler);
-        window.addEventListener('keyup', keyboardHandler);
-        let lastTime = performance.now();
-        let canceled = false;
-        const updateControl = (timestamp = Date.now()) => {
-            if (canceled) return;
-
-            const dt = timestamp - lastTime;
-            lastTime = timestamp;
-            setControl(control => {
-                const x = latestMousePos.current[0];
-                const y = latestMousePos.current[1];
-                const ratio = Math.min(0.02 * dt, 1);
-                const easeX = control.mouseX * (1 - ratio) + x * ratio;
-                const easeY = control.mouseY * (1 - ratio) + y * ratio;
-                const distance = Math.sqrt((easeX - control.mouseX) * (easeX - control.mouseX) + (easeY - control.mouseY) * (easeY - control.mouseY))
-                const keyInput = parseKeyMapping(window.keyList, keyMapping);
-                const rawControl = (distance < 1) ? {
-                    mouseX: x, mouseY: y, keyInput: keyInput
-                } : {mouseX: easeX, mouseY: easeY, keyInput: keyInput};
-                return config.parseControl({...control, ...rawControl});
-            })
-            setTimestamp(timestamp);
             waitUntilNextFrame(updateControl);
+            return () => {
+                window.removeEventListener('keydown', keyboardHandler);
+                window.removeEventListener('keyup', keyboardHandler);
+                canceled = true;
+            }
         }
-        waitUntilNextFrame(updateControl);
-        return () => {
-            window.removeEventListener('keydown', keyboardHandler);
-            window.removeEventListener('keyup', keyboardHandler);
-            canceled = true;
+        if(playType===1){
+            let canceled = false;
+            console.log(record);
+            resetMiku();
+            const updateControl = (timestamp = performance.now()) => {
+                if (canceled) return;
+                setControl(control => {
+                    console.log(timestamp-playTypeChangeTime);
+                    const rawControlIndex=record.reduce((p,c,i)=>c.timestamp<=timestamp-playTypeChangeTime?i:p,undefined);
+                    const rawControl=record[rawControlIndex]?.rawControl;
+                    console.log(rawControl);
+                    setCurrentFrame(rawControlIndex);
+                    return config.parseControl({...control, ...rawControl});
+                })
+                setTimestamp(timestamp);
+                waitUntilNextFrame(updateControl);
+            }
+            waitUntilNextFrame(updateControl);
+            return () => {
+                canceled = true;
+            }
         }
-    }, []);
+    }, [playType,playTypeChangeTime]);
+
     const handleMouseMove = (e) => {
-        const stageRect = stageRef.current?.getBoundingClientRect();
-        if (!stageRect) return;
-        const mouseX = e.clientX - Math.floor(stageRect.x);
-        const mouseY = e.clientY - Math.floor(stageRect.y);
-        //setControl(getControl(mouseX,mouseY));
-        latestMousePos.current = [mouseX, mouseY];
+        if(playType===0||playType===-1) {
+            const stageRect = stageRef.current?.getBoundingClientRect();
+            if (!stageRect) return;
+            const mouseX = e.clientX - Math.floor(stageRect.x);
+            const mouseY = e.clientY - Math.floor(stageRect.y);
+            //setControl(getControl(mouseX,mouseY));
+            latestMousePos.current = [mouseX, mouseY];
+        }
     }
     return (<div className="App">
             <div
@@ -1370,7 +1411,13 @@ function App() {
                     <ToggleButtonGroup
                         value={playType}
                         exclusive
-                        onChange={(e, v) => setPlayType(v || 0)}
+                        onChange={(e, v) => {
+                            if(v===-1){
+                                setRecord([]);
+                            }
+                            setPlayType(v || 0);
+                            setPlayTypeChangeTime(performance.now());
+                        }}
                     >
                         <ToggleButton value={-1}>
                             <FiberManualRecord/>
@@ -1384,15 +1431,15 @@ function App() {
                     </ToggleButtonGroup>
                     &nbsp;
                     <ToggleButtonGroup>
-                        <ToggleButton><FastRewind/></ToggleButton>
-                        <ToggleButton><FastForward/></ToggleButton>
+                        <ToggleButton value={-1}><FastRewind/></ToggleButton>
+                        <ToggleButton value={1}><FastForward/></ToggleButton>
                     </ToggleButtonGroup>
                     &nbsp;
-
                     <ToggleButtonGroup>
-                        <ToggleButton onClick={resetMiku}><Refresh/></ToggleButton>
+                        <ToggleButton  value={1} onClick={resetMiku}><Refresh/></ToggleButton>
                     </ToggleButtonGroup>
-
+                    {!!record?.length&&<div className='timeline'>{currentFrame?formatTime(record[currentFrame].timestamp)+' / ':null}{formatTime(record[record.length-1].timestamp)}</div>}
+                    {!!record?.length&&<div className='timeline'>{currentFrame?currentFrame+1+' / ':null}{record.length}</div>}
                 </div>}
                 {tabPage === 1 && <div className='controls-panel'>
                     {Object.entries(control).map(([k, v]) => <div><b>{k}</b>: {v}</div>)}

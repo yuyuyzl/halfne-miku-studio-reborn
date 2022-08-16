@@ -41,10 +41,17 @@ export const getInitPhysics=(config0)=>{
     const physics={};
     const collectPhysicsComponent=(config,currentPath)=>{
         if(config.massX!==undefined&&config.massY!==undefined){
-            //if(currentPath!=='head.tailL')return;
+            // if(currentPath!=='upper.shirtR')return;
             const absPos=getAbsolutePos(config0,currentPath);
-            const p=toAbsolute(config.massX,config.massY,absPos);
-            //console.log(absPos,p);
+            const massDisSqr=config.massX*config.massX+config.massY*config.massY;
+            const gravDisSqr=config.gravityX*config.gravityX+config.gravityY*config.gravityY;
+            const ratio=Math.sqrt(massDisSqr/gravDisSqr);
+            const p=toAbsolute(config.gravityX*ratio,config.gravityY*ratio,absPos);
+            // const p=toAbsolute(config.massX,config.massY,absPos);
+            // console.log(absPos,p,config,currentPath);
+            // console.log(ratio);
+            // console.log(config.gravityX*ratio,config.massX);
+            // console.log(config.gravityY*ratio,config.massY);
             //setDebugPoint(p);
             // debugger;
             physics[currentPath]={
@@ -52,7 +59,6 @@ export const getInitPhysics=(config0)=>{
                     py:p.y,
                     vx:0,
                     vy:0,
-                    rotation:absPos.rotation,
                 }
         }
         config.components?.forEach(o=>{
@@ -68,7 +74,7 @@ export const updatePhysics=(physics,root,dt)=> {
     Object.entries(physics).forEach(([currentPath, phy]) => {
         const config = getConfig(root, currentPath);
         const absPos = getAbsolutePos(root, currentPath);
-        //console.log(currentPath,phy.px,phy.py,phy.vx,phy.vy,absPos);
+        // console.log("UP::",currentPath,phy.px,phy.py,phy.vx,phy.vy,absPos);
         // 确定加速度
         const ax = config.gravityX;
         const ay = config.gravityY;
@@ -132,6 +138,6 @@ export const updatePhysics=(physics,root,dt)=> {
             vx, vy, px, py,
         }
     })
-    // console.log(newPhysics);
+    //console.log(newPhysics);
     return newPhysics;
 }

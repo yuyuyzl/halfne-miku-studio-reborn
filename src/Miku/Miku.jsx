@@ -7,7 +7,7 @@ import {getInitPhysics, parseConfig, updatePhysics} from "../Engine/core";
 export default function Miku(props){
     const {control,timestamp,model}=props;
     const lastTime=useRef(performance.now());
-    const [physics,setPhysics]=useState();
+    const [physics,setPhysics]=useState(getInitPhysics(parseConfig(model,control)));
     const [renderState,setRenderState]=useState();
 
     const work=(timestamp)=> {
@@ -17,8 +17,6 @@ export default function Miku(props){
         let currentRenderState=parseConfig(model,control,physics);
         setRenderState(currentRenderState);
         if(dt>1000||dt<=0)return;
-        if(!physics)
-            setPhysics(getInitPhysics(currentRenderState));
         setPhysics(physics => {
             return updatePhysics(physics,currentRenderState,dt);
         })
