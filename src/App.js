@@ -1438,7 +1438,7 @@ function App() {
                     <ToggleButtonGroup>
                         <ToggleButton  value={1} onClick={resetMiku}><Refresh/></ToggleButton>
                     </ToggleButtonGroup>
-                    {!!record?.length&&<div className='timeline'>{currentFrame?formatTime(record[currentFrame].timestamp)+' / ':null}{formatTime(record[record.length-1].timestamp)}</div>}
+                    {!!record?.length&&<div className='timeline'>{currentFrame?formatTime(record[currentFrame].timestamp)+' / ':null}{record.length?formatTime(record[record.length-1].timestamp):null}</div>}
                     {!!record?.length&&<div className='timeline'>{currentFrame?currentFrame+1+' / ':null}{record.length}</div>}
                 </div>}
                 {tabPage === 1 && <div className='controls-panel'>
