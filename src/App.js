@@ -1351,27 +1351,16 @@ function App() {
                 const x = latestMousePos.current[0];
                 const y = latestMousePos.current[1];
                 const keyInput = parseKeyMapping(window.keyList, keyMapping);
-                let rawControl = {mouseX: x, mouseY: y, keyInput: keyInput};
                 setControl(control => {
                     const ratio = Math.min(0.02 * dt, 1);
                     const easeX = control.mouseX * (1 - ratio) + x * ratio;
                     const easeY = control.mouseY * (1 - ratio) + y * ratio;
                     const distance = Math.sqrt((easeX - control.mouseX) * (easeX - control.mouseX) + (easeY - control.mouseY) * (easeY - control.mouseY))
-                    rawControl = (distance < 1) ?
+                    const rawControl = (distance < 1) ?
                         {mouseX: x, mouseY: y, keyInput: keyInput} :
                         {mouseX: easeX, mouseY: easeY, keyInput: keyInput};
-                    return config.parseControl({...control, ...rawControl});
+                    return config.parseControl({...control, ...rawControl , timestamp});
                 })
-                if (playType === -1) {
-                    setRecord(record => {
-                            record.push({
-                                timestamp: timestamp - playTypeChangeTime,
-                                rawControl
-                            });
-                            return record;
-                        }
-                    )
-                }
                 setTimestamp(timestamp);
                 waitUntilNextFrame(updateControl);
             }
@@ -1405,6 +1394,20 @@ function App() {
             }
         }
     }, [playType,playTypeChangeTime]);
+
+    useEffect(()=>{
+        if (playType === -1) {
+            setRecord(record => {
+                    const {mouseX,mouseY,timestamp,keyInput}=control
+                    record.push({
+                        timestamp: timestamp - playTypeChangeTime,
+                        rawControl: {mouseX,mouseY,keyInput},
+                    });
+                    return record;
+                }
+            )
+        }
+    },[control, playType, playTypeChangeTime]);
 
     const handleMouseMove = (e) => {
         if(playType===0||playType===-1) {
