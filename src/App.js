@@ -12,6 +12,9 @@ import Pause from "@mui/icons-material/Pause";
 import FastForward from "@mui/icons-material/FastForward";
 import FastRewind from "@mui/icons-material/FastRewind";
 import Refresh from "@mui/icons-material/Refresh";
+import FileOpen from "@mui/icons-material/FileOpen";
+import Save from "@mui/icons-material/Save";
+import FileSaver from 'file-saver';
 
 const defaultConfig = {
     defaultKeyMapping: [['EyeHappy', '1'], ['EyeJaded', '2'], ['EyeO_O', '3'], ['Eye*_*', '4'], ['Eye@_@', '5'], ['EyeSideGlance', '6'], ['EyeEheh', '7'], ['EyePumped', '8'], ['EyeBlink', 'x'], ['MouthAA', 'a'], ['MouthEE', 'd'], ['MouthOO', 'w'], ['MouthEH', 's'], ['MouthOH', 'e'], ['MouthTeeth', 'q'], ['MouthHappy', 'F1'], ['MouthNeutral', 'F2'], ['MouthCat', 'F3'], ['MouthAngry', 'F4'], ['MouthPout', 'F5'], ['MouthDrool', 'F6'], ['MouthDuck', 'F7'], ['MouthTongue', 'F8'],],
@@ -1375,7 +1378,7 @@ function App() {
                     const rawControlIndex=record.reduce((p,c,i)=>c.timestamp<=timestamp-playTypeChangeTime?i:p,undefined);
                     const rawControl=record[rawControlIndex]?.rawControl;
                     // console.log(rawControl);
-                    latestMousePos.current=[rawControl.mouseX,rawControl.mouseY];
+                    latestMousePos.current=[rawControl?.mouseX,rawControl?.mouseY];
                     setCurrentFrame(rawControlIndex);
                     return config.parseControl({...control, ...rawControl});
                 })
@@ -1445,7 +1448,15 @@ function App() {
                     </ToggleButtonGroup>
                     &nbsp;
                     <ToggleButtonGroup>
-                        <ToggleButton  value={1} onClick={()=>resetMiku()}><Refresh/></ToggleButton>
+                        <ToggleButton value={1} onClick={()=>resetMiku()}><Refresh/></ToggleButton>
+                    </ToggleButtonGroup>
+                    &nbsp;
+                    <ToggleButtonGroup>
+                        <ToggleButton value={1} onClick={()=>resetMiku()}><FileOpen/></ToggleButton>
+                        <ToggleButton value={1} onClick={()=>{
+                            const blob = new Blob([JSON.stringify(record)], {type: "text/plain;charset=utf-8"});
+                            FileSaver.saveAs(blob, "HMSR.json");
+                        }} disabled={record?.length===0}><Save/></ToggleButton>
                     </ToggleButtonGroup>
                     {!!currentFrame&&<><div className='timeline'>
                         <b>{formatTime(record[currentFrame].timestamp)}</b>
