@@ -1263,6 +1263,8 @@ const H = 600;
 
 let waitUntilNextFrame = requestAnimationFrame;
 
+let fpsArr=[];
+
 const formatTime=(millis)=>Math.floor(millis/1000/60)+':'+('00'+Math.floor(millis/1000%60)).slice(-2);
 
 function App() {
@@ -1276,7 +1278,8 @@ function App() {
     const [keyMapping, setKeyMapping] = useState(config.defaultKeyMapping);
 
     const [checked, setChecked] = useState(false);
-    const [fps, setFps] = useState(0);
+    const [fpsTarget, setFpsTarget] = useState(0);
+    const [fps,setFps]=useState(0);
 
     const [tabPage, setTabPage] = useState(0);
 
@@ -1311,8 +1314,19 @@ function App() {
     }
 
     useEffect(() => {
-        waitUntilNextFrame = fps ? (f => setTimeout(f, 1000 / fps)) : requestAnimationFrame
-    }, [fps]);
+        const _waitUntilNextFrame = fpsTarget ? (f => setTimeout(f, 1000 / fpsTarget)) : requestAnimationFrame
+        waitUntilNextFrame=cb=>{
+            _waitUntilNextFrame((...args)=>{
+                cb(...args);
+                const now = performance.now();
+                while (fpsArr.length > 0 && fpsArr[0] <= now - 1000) {
+                    fpsArr.shift();
+                }
+                fpsArr.push(now);
+                setFps(Math.round((fpsArr.length-1)*1000/(now-fpsArr[0])));
+            })
+        }
+    }, [fpsTarget]);
 
     useEffect(() => {
         if(playType===0||playType===-1) {
@@ -1334,30 +1348,30 @@ function App() {
                 if (canceled) return;
                 const dt = Math.min(timestamp - lastTime,50);
                 lastTime = timestamp;
+                const x = latestMousePos.current[0];
+                const y = latestMousePos.current[1];
+                const keyInput = parseKeyMapping(window.keyList, keyMapping);
+                let rawControl = {mouseX: x, mouseY: y, keyInput: keyInput};
                 setControl(control => {
-                    const x = latestMousePos.current[0];
-                    const y = latestMousePos.current[1];
                     const ratio = Math.min(0.02 * dt, 1);
                     const easeX = control.mouseX * (1 - ratio) + x * ratio;
                     const easeY = control.mouseY * (1 - ratio) + y * ratio;
                     const distance = Math.sqrt((easeX - control.mouseX) * (easeX - control.mouseX) + (easeY - control.mouseY) * (easeY - control.mouseY))
-                    const keyInput = parseKeyMapping(window.keyList, keyMapping);
-                    const rawControl = (distance < 1) ? {
-                        mouseX: x, mouseY: y, keyInput: keyInput
-                    } : {mouseX: easeX, mouseY: easeY, keyInput: keyInput};
-                    if (playType === -1) {
-                        console.log(timestamp);
-                        setRecord(record => [
-                                ...record,
-                                {
-                                    timestamp: timestamp - playTypeChangeTime,
-                                    rawControl
-                                }
-                            ]
-                        )
-                    }
+                    rawControl = (distance < 1) ?
+                        {mouseX: x, mouseY: y, keyInput: keyInput} :
+                        {mouseX: easeX, mouseY: easeY, keyInput: keyInput};
                     return config.parseControl({...control, ...rawControl});
                 })
+                if (playType === -1) {
+                    setRecord(record => {
+                            record.push({
+                                timestamp: timestamp - playTypeChangeTime,
+                                rawControl
+                            });
+                            return record;
+                        }
+                    )
+                }
                 setTimestamp(timestamp);
                 waitUntilNextFrame(updateControl);
             }
@@ -1414,6 +1428,10 @@ function App() {
             >
                 <Miku control={control} timestamp={timestamp} model={config.model} key={mikuResetter}></Miku>
             </div>
+
+        <div className='fps'>
+            <b>FPS: </b>{fps}
+        </div>
             <div className="controls">
                 {/*<FormControlLabel control={<Checkbox checked={checked} onChange={e=>setChecked(e.target.checked)}/>} label="Label"/>*/}
                 <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
@@ -1486,9 +1504,9 @@ function App() {
                     </ToggleButtonGroup>
                 </div>}{tabPage === 3 && <div className='controls-panel'>
                     <ToggleButtonGroup
-                        value={fps}
+                        value={fpsTarget}
                         exclusive
-                        onChange={(e, v) => setFps(v || 0)}
+                        onChange={(e, v) => setFpsTarget(v || 0)}
                         label="FPS Limit"
                     >
                         <ToggleButton value={0} aria-label="OFF">
