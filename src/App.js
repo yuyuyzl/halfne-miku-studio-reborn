@@ -1282,15 +1282,30 @@ function App() {
     const [currentFrame,setCurrentFrame]=useState();
     const [record,setRecord]=useState([]);
     const [mikuResetter,setMikuResetter]=useState(0);
+    const [stageBackground,setStageBackground]=useState('#FFFFFF');
 
-    const resetMiku=()=>{
-        latestMousePos.current=[W/2,H/2]
-        setControl(config.parseControl());
+    const resetMiku=(rawControl={mouseX:W/2,mouseY:H/2,keyInput:[]})=>{
+        latestMousePos.current=[rawControl.mouseX,rawControl.mouseY];
+        setControl(config.parseControl(rawControl));
         setMikuResetter(i=>i+1);
     }
 
     const parseKeyMapping = (keyList, keyMapping) => keyList.map(o => keyMapping.filter(([k, v]) => v === o).map(([k, v]) => k))
-        .reduce((p, c) => [...p, ...c], [])
+        .reduce((p, c) => [...p, ...c], []);
+
+    const togglePlayType=v=> {
+        if (v === -1) {
+            setCurrentFrame(undefined);
+            setRecord([]);
+        }
+        if (v === 1) {
+            if (record.length)
+                resetMiku(record[0].rawControl);
+            else return;
+        }
+        setPlayType(v || 0);
+        setPlayTypeChangeTime(performance.now());
+    }
 
     useEffect(() => {
         waitUntilNextFrame = fps ? (f => setTimeout(f, 1000 / fps)) : requestAnimationFrame
@@ -1314,7 +1329,7 @@ function App() {
             let canceled = false;
             const updateControl = (timestamp = performance.now()) => {
                 if (canceled) return;
-                const dt = timestamp - lastTime;
+                const dt = Math.min(timestamp - lastTime,50);
                 lastTime = timestamp;
                 setControl(control => {
                     const x = latestMousePos.current[0];
@@ -1353,14 +1368,14 @@ function App() {
         if(playType===1){
             let canceled = false;
             console.log(record);
-            resetMiku();
             const updateControl = (timestamp = performance.now()) => {
                 if (canceled) return;
                 setControl(control => {
-                    console.log(timestamp-playTypeChangeTime);
+                    // console.log(timestamp-playTypeChangeTime);
                     const rawControlIndex=record.reduce((p,c,i)=>c.timestamp<=timestamp-playTypeChangeTime?i:p,undefined);
                     const rawControl=record[rawControlIndex]?.rawControl;
-                    console.log(rawControl);
+                    // console.log(rawControl);
+                    latestMousePos.current=[rawControl.mouseX,rawControl.mouseY];
                     setCurrentFrame(rawControlIndex);
                     return config.parseControl({...control, ...rawControl});
                 })
@@ -1387,7 +1402,7 @@ function App() {
     return (<div className="App">
             <div
                 className="stage"
-                style={{width: W + 'px', height: H + 'px'}}
+                style={{width: W + 'px', height: H + 'px',backgroundColor:stageBackground,backgroundImage:stageBackground}}
                 ref={stageRef}
                 onMouseMove={handleMouseMove}
                 onTouchMove={(e) => {
@@ -1407,23 +1422,16 @@ function App() {
                     </Tabs>
                 </Box>
 
-                {tabPage === 0 && <div className='controls-panel'>
+                {tabPage === 0 && <div className='controls-panel controls-panel-control'>
                     <ToggleButtonGroup
                         value={playType}
                         exclusive
-                        onChange={(e, v) => {
-                            if(v===-1){
-                                setCurrentFrame(undefined);
-                                setRecord([]);
-                            }
-                            setPlayType(v || 0);
-                            setPlayTypeChangeTime(performance.now());
-                        }}
+                        onChange={(e, v) =>togglePlayType(v)}
                     >
                         <ToggleButton value={-1}>
                             <FiberManualRecord/>
                         </ToggleButton>
-                        <ToggleButton value={1}>
+                        <ToggleButton value={1} disabled={record?.length===0}>
                             <PlayArrow/>
                         </ToggleButton>
                         <ToggleButton value={2}>
@@ -1437,21 +1445,35 @@ function App() {
                     </ToggleButtonGroup>
                     &nbsp;
                     <ToggleButtonGroup>
-                        <ToggleButton  value={1} onClick={resetMiku}><Refresh/></ToggleButton>
+                        <ToggleButton  value={1} onClick={()=>resetMiku()}><Refresh/></ToggleButton>
                     </ToggleButtonGroup>
+                    {!!currentFrame&&<><div className='timeline'>
+                        <b>{formatTime(record[currentFrame].timestamp)}</b>
+                        <span className='small'>&nbsp;{currentFrame+1}</span>
+                    </div><div className='timeline'>/</div></>}
                     {!!record?.length&&<div className='timeline'>
-                        {currentFrame?formatTime(record[currentFrame].timestamp)+' / ':null}
-                        {record.length?formatTime(record[record.length-1].timestamp):null}
-                    </div>}
-                    {!!record?.length&&<div className='timeline'>
-                        {currentFrame?currentFrame+1+' / ':null}
-                        {record.length}
+                        <b>{record.length?formatTime(record[record.length-1].timestamp):null}</b>
+                        <span className='small'>&nbsp;{record.length}</span>
                     </div>}
                 </div>}
                 {tabPage === 1 && <div className='controls-panel'>
-                    {Object.entries(control).map(([k, v]) => <div><b>{k}</b>: {v}</div>)}
+                    {Object.entries(control).map(([k, v]) => <div key={k}><b>{k}</b>: {v}</div>)}
                 </div>}
-                {tabPage === 3 && <div className='controls-panel'>
+                {tabPage === 2 && <div className='controls-panel'>
+                    <ToggleButtonGroup
+                        value={stageBackground}
+                        exclusive
+                        onChange={(e, v) => setStageBackground(v || 0)}
+                        label="Background"
+                    >
+                        <ToggleButton value={'#FFFFFF'} aria-label="OFF">
+                            White
+                        </ToggleButton>
+                        <ToggleButton value={'#0000FF'} aria-label="30 FPS">
+                            Blue
+                        </ToggleButton>
+                    </ToggleButtonGroup>
+                </div>}{tabPage === 3 && <div className='controls-panel'>
                     <ToggleButtonGroup
                         value={fps}
                         exclusive

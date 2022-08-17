@@ -9,7 +9,6 @@
   overflow: hidden;
 }
 .stage{
-  background: #FFFFFF;
   position: relative;
 }
 .controls{
@@ -22,7 +21,17 @@
   &-panel{
     padding: 8px;
   }
+  &-panel-control{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+  }
 }
 .timeline{
-
+  display: inline;
+  margin-left: 8px;
+  .small{
+    font-size: 12px;
+  }
 }

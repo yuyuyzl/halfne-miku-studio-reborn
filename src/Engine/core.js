@@ -37,23 +37,12 @@ export const parseConfig= (o,control,physics={})=> {
     }else return parsed;
 }
 
-export const getInitPhysics=(config0)=>{
-    const physics={};
+export const getInitPhysics=(config0,stablize=true)=>{
+    let physics={};
     const collectPhysicsComponent=(config,currentPath)=>{
         if(config.massX!==undefined&&config.massY!==undefined){
-            // if(currentPath!=='upper.shirtR')return;
             const absPos=getAbsolutePos(config0,currentPath);
-            const massDisSqr=config.massX*config.massX+config.massY*config.massY;
-            const gravDisSqr=config.gravityX*config.gravityX+config.gravityY*config.gravityY;
-            const ratio=Math.sqrt(massDisSqr/gravDisSqr);
-            const p=toAbsolute(config.gravityX*ratio,config.gravityY*ratio,absPos);
-            // const p=toAbsolute(config.massX,config.massY,absPos);
-            // console.log(absPos,p,config,currentPath);
-            // console.log(ratio);
-            // console.log(config.gravityX*ratio,config.massX);
-            // console.log(config.gravityY*ratio,config.massY);
-            //setDebugPoint(p);
-            // debugger;
+            const p=toAbsolute(config.massX,config.massY,absPos);// const p=toAbsolute(config.massX,config.massY,absPos);
             physics[currentPath]={
                     px:p.x,
                     py:p.y,
@@ -66,6 +55,10 @@ export const getInitPhysics=(config0)=>{
         });
     }
     collectPhysicsComponent(config0);
+    if(stablize)
+        for (let i=0;i<100;i++){
+            physics=updatePhysics(physics,config0,50);
+        }
     return physics;
 }
 
