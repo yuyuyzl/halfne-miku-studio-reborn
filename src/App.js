@@ -1413,8 +1413,8 @@ function App() {
                         exclusive
                         onChange={(e, v) => {
                             if(v===-1){
-                                setRecord([]);
                                 setCurrentFrame(undefined);
+                                setRecord([]);
                             }
                             setPlayType(v || 0);
                             setPlayTypeChangeTime(performance.now());
