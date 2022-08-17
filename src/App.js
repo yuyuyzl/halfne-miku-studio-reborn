@@ -1414,6 +1414,7 @@ function App() {
                         onChange={(e, v) => {
                             if(v===-1){
                                 setRecord([]);
+                                setCurrentFrame(undefined);
                             }
                             setPlayType(v || 0);
                             setPlayTypeChangeTime(performance.now());
@@ -1438,8 +1439,14 @@ function App() {
                     <ToggleButtonGroup>
                         <ToggleButton  value={1} onClick={resetMiku}><Refresh/></ToggleButton>
                     </ToggleButtonGroup>
-                    {!!record?.length&&<div className='timeline'>{currentFrame?formatTime(record[currentFrame].timestamp)+' / ':null}{record.length?formatTime(record[record.length-1].timestamp):null}</div>}
-                    {!!record?.length&&<div className='timeline'>{currentFrame?currentFrame+1+' / ':null}{record.length}</div>}
+                    {!!record?.length&&<div className='timeline'>
+                        {currentFrame?formatTime(record[currentFrame].timestamp)+' / ':null}
+                        {record.length?formatTime(record[record.length-1].timestamp):null}
+                    </div>}
+                    {!!record?.length&&<div className='timeline'>
+                        {currentFrame?currentFrame+1+' / ':null}
+                        {record.length}
+                    </div>}
                 </div>}
                 {tabPage === 1 && <div className='controls-panel'>
                     {Object.entries(control).map(([k, v]) => <div><b>{k}</b>: {v}</div>)}
