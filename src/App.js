@@ -1473,7 +1473,19 @@ function App() {
                     </ToggleButtonGroup>
                     &nbsp;
                     <ToggleButtonGroup>
-                        <ToggleButton value={1} onClick={()=>resetMiku()}><FileOpen/></ToggleButton>
+                        <ToggleButton value={1} onClick={()=>{
+                            try {
+                                const input=document.createElement('input');
+                                input.type='file';
+                                input.onchange=(e)=>{
+                                    const fr=new FileReader();
+                                    fr.onload=()=>setRecord(JSON.parse(fr.result));
+                                    fr.readAsText(e.target.files[0])
+                                };
+                                input.click();
+                            }catch {}
+
+                        }}><FileOpen/></ToggleButton>
                         <ToggleButton value={1} onClick={()=>{
                             const blob = new Blob([JSON.stringify(record)], {type: "text/plain;charset=utf-8"});
                             FileSaver.saveAs(blob, "HMSR.json");
