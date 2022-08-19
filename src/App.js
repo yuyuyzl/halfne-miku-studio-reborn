@@ -21,7 +21,7 @@ const defaultConfig = {
     parseControl: (_control = {
         mouseX: 400, mouseY: 300, mouthType: "happy", mouth: 1, eyeType: "happy", eyeOpen: 'o', keyInput: []
     }) => {
-        const {mouseX, mouseY, keyInput} = _control;
+        const {mouseX=400, mouseY=300, keyInput=[]} = _control;
         let control = {
             ..._control, x: (mouseX - W / 2) / W, y: (mouseY - H / 2) / H
         };
@@ -1306,7 +1306,7 @@ function App() {
         }
         if (v === 1) {
             if (record.length)
-                resetMiku(record[0].rawControl);
+                resetMiku(record[0].c);
             else return;
         }
         setPlayType(v || 0);
@@ -1378,8 +1378,8 @@ function App() {
                 if (canceled) return;
                 setControl(control => {
                     // console.log(timestamp-playTypeChangeTime);
-                    const rawControlIndex=record.reduce((p,c,i)=>c.timestamp<=timestamp-playTypeChangeTime?i:p,undefined);
-                    const rawControl=record[rawControlIndex]?.rawControl;
+                    const rawControlIndex=record.reduce((p,c,i)=>c.t<=timestamp-playTypeChangeTime?i:p,undefined);
+                    const rawControl=record[rawControlIndex]?.c;
                     // console.log(rawControl);
                     latestMousePos.current=[rawControl?.mouseX,rawControl?.mouseY];
                     setCurrentFrame(rawControlIndex);
@@ -1400,8 +1400,8 @@ function App() {
             setRecord(record => {
                     const {mouseX,mouseY,timestamp,keyInput}=control
                     record.push({
-                        timestamp: timestamp - playTypeChangeTime,
-                        rawControl: {mouseX,mouseY,keyInput},
+                        t: timestamp - playTypeChangeTime,
+                        c: {mouseX,mouseY,keyInput:keyInput.length?keyInput:undefined},
                     });
                     return record;
                 }
@@ -1492,11 +1492,11 @@ function App() {
                         }} disabled={record?.length===0}><Save/></ToggleButton>
                     </ToggleButtonGroup>
                     {!!currentFrame&&<><div className='timeline'>
-                        <b>{formatTime(record[currentFrame].timestamp)}</b>
+                        <b>{formatTime(record[currentFrame].t)}</b>
                         <span className='small'>&nbsp;{currentFrame+1}</span>
                     </div><div className='timeline'>/</div></>}
                     {!!record?.length&&<div className='timeline'>
-                        <b>{record.length?formatTime(record[record.length-1].timestamp):null}</b>
+                        <b>{record.length?formatTime(record[record.length-1].t):null}</b>
                         <span className='small'>&nbsp;{record.length}</span>
                     </div>}
                 </div>}
