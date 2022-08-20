@@ -1279,6 +1279,7 @@ const formatTime=(millis)=>Math.floor(millis/1000/60)+':'+('00'+Math.floor(milli
 function App() {
     const stageRef = useRef();
     const latestMousePos = useRef([W/2, H/2]);
+    const latestMouseDown = useRef(false);
     const [timestamp, setTimestamp] = useState(performance.now());
 
     const [config, setConfig] = useState(defaultConfig);
@@ -1286,7 +1287,6 @@ function App() {
     const [control, setControl] = useState(config.parseControl());
     const [keyMapping, setKeyMapping] = useState(config.defaultKeyMapping);
 
-    const [checked, setChecked] = useState(false);
     const [fpsTarget, setFpsTarget] = useState(0);
     const [fps,setFps]=useState(0);
 
@@ -1298,6 +1298,7 @@ function App() {
     const [record,setRecord]=useState([]);
     const [mikuResetter,setMikuResetter]=useState(0);
     const [stageBackground,setStageBackground]=useState('#FFFFFF');
+    const [keyLayer,setKeyLayer]=useState(0);
 
     const resetMiku=(rawControl={mouseX:W/2,mouseY:H/2,keyInput:[]})=>{
         latestMousePos.current=[rawControl.mouseX,rawControl.mouseY];
@@ -1411,7 +1412,7 @@ function App() {
     useEffect(()=>{
         if (playType === -1) {
             setRecord(record => {
-                    const {mouseX,mouseY,timestamp,keyInput}=control
+                    const {mouseX,mouseY,timestamp,keyInput}=control;
                     record.push({
                         t: timestamp - playTypeChangeTime,
                         c: {mouseX,mouseY,keyInput:keyInput.length?keyInput:undefined},
@@ -1441,6 +1442,9 @@ function App() {
                 style={{width: W + 'px', height: H + 'px',backgroundColor:stageBackground,backgroundImage:'url("'+stageBackground+'")'}}
                 ref={stageRef}
                 onMouseMove={handleMouseMove}
+                onMouseDown={()=>{latestMouseDown.current=true}}
+                onMouseUp={()=>{latestMouseDown.current=false}}
+                onMouseLeave={()=>{latestMouseDown.current=false}}
                 onTouchMove={(e) => {
                     handleMouseMove(e.touches?.[0]);
                 }}
@@ -1449,7 +1453,7 @@ function App() {
             </div>
 
         <div className='fps'>
-            <b>FPS: </b>{fps}
+            <b>FPS: </b>{Math.round(fps)}
         </div>
             <div className="controls">
                 {/*<FormControlLabel control={<Checkbox checked={checked} onChange={e=>setChecked(e.target.checked)}/>} label="Label"/>*/}
@@ -1533,7 +1537,7 @@ function App() {
                         <ToggleButton value={'#0000FF'} aria-label="Blue">
                             Blue
                         </ToggleButton>
-                        <ToggleButton value={'#00FF00'} aria-label="Blue">
+                        <ToggleButton value={'#00FF00'} aria-label="Green">
                             Green
                         </ToggleButton>
                     </ToggleButtonGroup>
