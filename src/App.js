@@ -1,6 +1,6 @@
 import './App.less';
 import Miku from "./Miku/Miku";
-import {useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 
 import {getAbsolutePos, getConfig, parseModelJS, physicsRotation, physicsScaleY} from "./Engine/modelUtils";
 import {
@@ -1323,16 +1323,20 @@ function App() {
     }
 
     useEffect(() => {
-        const _waitUntilNextFrame = fpsTarget ? (f => setTimeout(f, 1000 / fpsTarget)) : requestAnimationFrame
+        let frametime=0;
+        const _waitUntilNextFrame = fpsTarget ? (f => setTimeout(f, 1000 / fpsTarget-frametime)) : requestAnimationFrame
         waitUntilNextFrame=cb=>{
             _waitUntilNextFrame((...args)=>{
+                const tic= performance.now();
                 cb(...args);
                 const now = performance.now();
+                frametime=now-tic;
+                console.log(now-tic);
                 while (fpsArr.length > 0 && fpsArr[0] <= now - 1000) {
                     fpsArr.shift();
                 }
                 fpsArr.push(now);
-                setFps(Math.round((fpsArr.length-1)*1000/(now-fpsArr[0])));
+                setFps((fpsArr.length-1)*1000/(now-fpsArr[0]));
             })
         }
     }, [fpsTarget]);
@@ -1418,7 +1422,7 @@ function App() {
         }
     },[control, playType, playTypeChangeTime]);
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = useCallback((e) => {
         if(playType===0||playType===-1) {
             const stageRect = stageRef.current?.getBoundingClientRect();
             if (!stageRect) return;
@@ -1427,7 +1431,10 @@ function App() {
             //setControl(getControl(mouseX,mouseY));
             latestMousePos.current = [mouseX, mouseY];
         }
-    }
+    },[playType])
+
+
+
     return (<div className="App">
             <div
                 className="stage"
@@ -1500,14 +1507,15 @@ function App() {
                             FileSaver.saveAs(blob, "HMSR.json");
                         }} disabled={record?.length===0}><Save/></ToggleButton>
                     </ToggleButtonGroup>
-                    {!!currentFrame&&<><div className='timeline'>
+                    {!!currentFrame&&<><div className='timedisplay'>
                         <b>{formatTime(record[currentFrame].t)}</b>
                         <span className='small'>&nbsp;{currentFrame+1}</span>
-                    </div><div className='timeline'>/</div></>}
-                    {!!record?.length&&<div className='timeline'>
+                    </div><div className='timedisplay'>/</div></>}
+                    {!!record?.length&&<div className='timedisplay'>
                         <b>{record.length?formatTime(record[record.length-1].t):null}</b>
                         <span className='small'>&nbsp;{record.length}</span>
                     </div>}
+                    <div className='timeline'>123</div>
                 </div>}
                 {tabPage === 1 && <div className='controls-panel'>
                     {Object.entries(control).map(([k, v]) => <div key={k}><b>{k}</b>: {v}</div>)}
@@ -1529,6 +1537,7 @@ function App() {
                             Green
                         </ToggleButton>
                     </ToggleButtonGroup>
+                    &nbsp;
                     <ToggleButtonGroup
                         value={stageBackground}
                         exclusive
