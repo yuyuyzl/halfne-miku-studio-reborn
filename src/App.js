@@ -1294,11 +1294,12 @@ function App() {
 
     const [playType,setPlayType]=useState(0);
     const [playTypeChangeTime,setPlayTypeChangeTime]=useState();
-    const [currentFrame,setCurrentFrame]=useState();
+    // const [currentFrame,setCurrentFrame]=useState();
     const [record,setRecord]=useState([]);
     const [mikuResetter,setMikuResetter]=useState(0);
     const [stageBackground,setStageBackground]=useState('#FFFFFF');
-    const [keyLayer,setKeyLayer]=useState(0);
+    const [layer,setLayer]=useState(0);
+    const [editorTimestamp,setEditorTimestamp]=useState(0);
 
     const resetMiku=(rawControl={mouseX:W/2,mouseY:H/2,keyInput:[]})=>{
         latestMousePos.current=[rawControl.mouseX,rawControl.mouseY];
@@ -1311,12 +1312,12 @@ function App() {
 
     const togglePlayType=v=> {
         if (v === -1) {
-            setCurrentFrame(undefined);
+            // setCurrentFrame(undefined);
             setRecord([]);
         }
         if (v === 1) {
             if (record.length)
-                resetMiku(record[0].c);
+                resetMiku(record?.[0]?.[0]?.c);
             else return;
         }
         setPlayType(v || 0);
@@ -1332,7 +1333,6 @@ function App() {
                 cb(...args);
                 const now = performance.now();
                 frametime=now-tic;
-                console.log(now-tic);
                 while (fpsArr.length > 0 && fpsArr[0] <= now - 1000) {
                     fpsArr.shift();
                 }
@@ -1366,6 +1366,8 @@ function App() {
                 const y = latestMousePos.current[1];
                 const keyInput = parseKeyMapping(window.keyList, keyMapping);
                 setControl(control => {
+
+                    console.log('setcontrol-1')
                     const ratio = Math.min(0.02 * dt, 1);
                     const easeX = control.mouseX * (1 - ratio) + x * ratio;
                     const easeY = control.mouseY * (1 - ratio) + y * ratio;
@@ -1392,11 +1394,13 @@ function App() {
                 if (canceled) return;
                 setControl(control => {
                     // console.log(timestamp-playTypeChangeTime);
-                    const rawControlIndex=record.reduce((p,c,i)=>c.t<=timestamp-playTypeChangeTime?i:p,undefined);
-                    const rawControl=record[rawControlIndex]?.c;
+                    const targetTime=timestamp-playTypeChangeTime;
+                    const rawControlIndex=record[layer].reduce((p,c,i)=>c.t<=targetTime?i:p,undefined);
+                    const rawControl=record[layer][rawControlIndex]?.c;
                     // console.log(rawControl);
                     latestMousePos.current=[rawControl?.mouseX,rawControl?.mouseY];
-                    setCurrentFrame(rawControlIndex);
+                    // setCurrentFrame(rawControlIndex);
+                    setEditorTimestamp(targetTime);
                     return config.parseControl({...control, ...rawControl});
                 })
                 setTimestamp(timestamp);
@@ -1411,15 +1415,17 @@ function App() {
 
     useEffect(()=>{
         if (playType === -1) {
+            const {mouseX,mouseY,timestamp,keyInput}=control;
             setRecord(record => {
-                    const {mouseX,mouseY,timestamp,keyInput}=control;
-                    record.push({
+                    if(!record[layer])record[layer]=[];
+                    record[layer].push({
                         t: timestamp - playTypeChangeTime,
-                        c: {mouseX,mouseY,keyInput:keyInput.length?keyInput:undefined},
+                        c: {mouseX,mouseY,keyInput:keyInput?.length?keyInput:undefined},
                     });
                     return record;
                 }
             )
+            setEditorTimestamp(timestamp - playTypeChangeTime);
         }
     },[control, playType, playTypeChangeTime]);
 
@@ -1511,14 +1517,15 @@ function App() {
                             FileSaver.saveAs(blob, "HMSR.json");
                         }} disabled={record?.length===0}><Save/></ToggleButton>
                     </ToggleButtonGroup>
-                    {!!currentFrame&&<><div className='timedisplay'>
-                        <b>{formatTime(record[currentFrame].t)}</b>
-                        <span className='small'>&nbsp;{currentFrame+1}</span>
-                    </div><div className='timedisplay'>/</div></>}
-                    {!!record?.length&&<div className='timedisplay'>
-                        <b>{record.length?formatTime(record[record.length-1].t):null}</b>
-                        <span className='small'>&nbsp;{record.length}</span>
-                    </div>}
+                    <div className='timedisplay'>
+                        <b>{formatTime(editorTimestamp)}</b>
+                        <span className='small'>&nbsp;{Math.round(editorTimestamp%1000)}</span>
+                    </div>
+                    {/*<div className='timedisplay'>/</div>*/}
+                    {/*<div className='timedisplay'>*/}
+                    {/*    <b>{record.length?formatTime(record[layer][record.length-1].t):null}</b>*/}
+                    {/*    <span className='small'>&nbsp;{record.length}</span>*/}
+                    {/*</div>*/}
                     <div className='timeline'>123</div>
                 </div>}
                 {tabPage === 1 && <div className='controls-panel'>
