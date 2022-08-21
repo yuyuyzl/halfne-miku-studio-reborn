@@ -1323,6 +1323,15 @@ function App() {
         if (v === 1) {
             if (!record.length)return;
         }
+
+        if(audioRef.current) {
+            if (v === -1 || v === 1) {
+                audioRef.current.currentTime = editorTimestamp / 1000;
+                audioRef.current.play();
+            } else {
+                audioRef.current.pause();
+            }
+        }
         setPlayType(v || 0);
         setPlayTypeChangeTime(performance.now());
     }
