@@ -12,7 +12,7 @@ export default function Miku(props){
 
     const work=(timestamp)=> {
         const dt = Math.min(timestamp - lastTime.current,50);
-        console.log(timestamp,dt);
+        // console.log(timestamp,dt);
         lastTime.current = timestamp;
         let currentRenderState=parseConfig(model,control,physics);
         setRenderState(currentRenderState);

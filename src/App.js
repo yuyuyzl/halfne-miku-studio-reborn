@@ -15,6 +15,7 @@ import Refresh from "@mui/icons-material/Refresh";
 import FileOpen from "@mui/icons-material/FileOpen";
 import Save from "@mui/icons-material/Save";
 import Lock from "@mui/icons-material/Lock";
+import MusicNote from "@mui/icons-material/MusicNote";
 import FileSaver from 'file-saver';
 
 const defaultConfig = {
@@ -1281,6 +1282,7 @@ function App() {
     const stageRef = useRef();
     const latestMousePos = useRef([W/2, H/2]);
     const latestMouseDown = useRef(false);
+    const audioRef = useRef();
     const [timestamp, setTimestamp] = useState(performance.now());
 
     const [config, setConfig] = useState(defaultConfig);
@@ -1298,10 +1300,11 @@ function App() {
     // const [currentFrame,setCurrentFrame]=useState();
     const [record,setRecord]=useState([]);
     const [mikuResetter,setMikuResetter]=useState(0);
-    const [stageBackground,setStageBackground]=useState('#FFFFFF');
+    const [stageBackground,setStageBackground]=useState(Object?.entries?.(config.background)?.[0]?.[1]||'#FFFFFF');
     const [layer,setLayer]=useState(0);
     const [editorTimestamp,setEditorTimestamp]=useState(0);
     const [runPhysics,setRunPhysics]=useState(true);
+    const [audioFile,setAudioFile]=useState();
 
     const resetMiku=(rawControl={mouseX:W/2,mouseY:H/2,keyInput:[]})=>{
         latestMousePos.current=[rawControl.mouseX,rawControl.mouseY];
@@ -1318,9 +1321,7 @@ function App() {
             setRecord([]);
         }
         if (v === 1) {
-            if (record.length)
-                resetMiku(record?.[0]?.[0]?.c);
-            else return;
+            if (!record.length)return;
         }
         setPlayType(v || 0);
         setPlayTypeChangeTime(performance.now());
@@ -1390,18 +1391,19 @@ function App() {
         if(playType===1){
             let canceled = false;
             console.log(record);
+            const editorTimestampOnPlay=editorTimestamp;
             const updateControl = (timestamp = performance.now()) => {
                 if (canceled) return;
-                const targetTime=timestamp-playTypeChangeTime;
-                setControl(control => {
-                    // console.log(timestamp-playTypeChangeTime);
-                    const rawControlIndex=record[layer].reduce((p,c,i)=>c.t<=targetTime?i:p,undefined);
-                    const rawControl=record[layer][rawControlIndex]?.c;
-                    // console.log(rawControl);
-                    latestMousePos.current=[rawControl?.mouseX,rawControl?.mouseY];
-                    // setCurrentFrame(rawControlIndex);
-                    return config.parseControl({...control, ...rawControl});
-                })
+                const targetTime=timestamp-playTypeChangeTime+editorTimestampOnPlay;
+                // setControl(control => {
+                //     // console.log(timestamp-playTypeChangeTime);
+                //     const rawControlIndex=record[layer].reduce((p,c,i)=>c.t<=targetTime?i:p,undefined);
+                //     const rawControl=record[layer][rawControlIndex]?.c;
+                //     // console.log(rawControl);
+                //     latestMousePos.current=[rawControl?.mouseX,rawControl?.mouseY];
+                //     // setCurrentFrame(rawControlIndex);
+                //     return config.parseControl({...control, ...rawControl});
+                // })
                 setEditorTimestamp(targetTime);
                 setTimestamp(timestamp);
                 waitUntilNextFrame(updateControl);
@@ -1430,7 +1432,7 @@ function App() {
     },[control, layer, playType, playTypeChangeTime]);
 
     useEffect(()=>{
-        if((playType===2||playType===0)&&record?.length){
+        if((playType===2||playType===0||playType===1)&&record?.length){
             const targetTime=editorTimestamp;
             setControl(control => {
                 // console.log(timestamp-playTypeChangeTime);
@@ -1439,7 +1441,7 @@ function App() {
                 const rawControlNext=record[layer][rawControlIndex+1]?.c;
                 // console.log(rawControl);
                 if(rawControlNext){
-                    console.log(rawControl,rawControlNext);
+                    // console.log(rawControl,rawControlNext);
                     const lt=record[layer][rawControlIndex]?.t;
                     const rt=record[layer][rawControlIndex+1]?.t;
                     const kl=(rt-targetTime)/(rt-lt);
@@ -1516,7 +1518,7 @@ function App() {
                     </ToggleButtonGroup>
                     &nbsp;
                     <ToggleButtonGroup>
-                        <ToggleButton value={-1} onClick={e=>{setEditorTimestamp(x=>x-100)}}><FastRewind/></ToggleButton>
+                        <ToggleButton value={-1} onClick={e=>{setEditorTimestamp(x=>Math.max(x-100,0))}}><FastRewind/></ToggleButton>
                         <ToggleButton value={1} onClick={e=>{setEditorTimestamp(x=>x+100)}}><FastForward/></ToggleButton>
                     </ToggleButtonGroup>
                     &nbsp;
@@ -1537,29 +1539,42 @@ function App() {
                                 const input=document.createElement('input');
                                 input.type='file';
                                 input.onchange=(e)=>{
+                                    console.log(e.target.files[0]);
+                                    const fr=new FileReader();
+                                    fr.onload=()=>setAudioFile(fr.result);
+                                    fr.readAsDataURL(e.target.files[0]);
+                                };
+                                input.click();
+                            }catch {}
+                        }}><MusicNote/></ToggleButton>
+                        <ToggleButton value={1} onClick={()=>{
+                            try {
+                                const input=document.createElement('input');
+                                input.type='file';
+                                input.onchange=(e)=>{
                                     const fr=new FileReader();
                                     fr.onload=()=>setRecord(JSON.parse(fr.result));
                                     fr.readAsText(e.target.files[0])
                                 };
                                 input.click();
                             }catch {}
-
                         }}><FileOpen/></ToggleButton>
                         <ToggleButton value={1} onClick={()=>{
                             const blob = new Blob([JSON.stringify(record)], {type: "text/plain;charset=utf-8"});
                             FileSaver.saveAs(blob, "HMSR.json");
                         }} disabled={record?.length===0}><Save/></ToggleButton>
                     </ToggleButtonGroup>
-                    <div className='timedisplay' onWheel={e=>{setEditorTimestamp(x=>x+e.deltaY)}}>
+                    <div className='timedisplay' onWheel={e=>{setEditorTimestamp(x=>Math.max(x+e.deltaY,0))}}>
                         <b>{formatTime(editorTimestamp)}</b>
                         <span className='small'>&nbsp;{Math.floor(editorTimestamp%1000/100)}</span>
                     </div>
+                    {audioFile?<audio src={audioFile} ref={audioRef}/>:null}
                     {/*<div className='timedisplay'>/</div>*/}
                     {/*<div className='timedisplay'>*/}
                     {/*    <b>{record.length?formatTime(record[layer][record.length-1].t):null}</b>*/}
                     {/*    <span className='small'>&nbsp;{record.length}</span>*/}
                     {/*</div>*/}
-                    <div className='timeline'>123</div>
+                    {/*<div className='timeline'>123</div>*/}
                 </div>}
                 {tabPage === 1 && <div className='controls-panel'>
                     {Object.entries(control).map(([k, v]) => <div key={k}><b>{k}</b>: {v}</div>)}
