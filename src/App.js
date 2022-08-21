@@ -14,6 +14,7 @@ import FastRewind from "@mui/icons-material/FastRewind";
 import Refresh from "@mui/icons-material/Refresh";
 import FileOpen from "@mui/icons-material/FileOpen";
 import Save from "@mui/icons-material/Save";
+import Lock from "@mui/icons-material/Lock";
 import FileSaver from 'file-saver';
 
 const defaultConfig = {
@@ -1300,6 +1301,7 @@ function App() {
     const [stageBackground,setStageBackground]=useState('#FFFFFF');
     const [layer,setLayer]=useState(0);
     const [editorTimestamp,setEditorTimestamp]=useState(0);
+    const [runPhysics,setRunPhysics]=useState(true);
 
     const resetMiku=(rawControl={mouseX:W/2,mouseY:H/2,keyInput:[]})=>{
         latestMousePos.current=[rawControl.mouseX,rawControl.mouseY];
@@ -1366,8 +1368,6 @@ function App() {
                 const y = latestMousePos.current[1];
                 const keyInput = parseKeyMapping(window.keyList, keyMapping);
                 setControl(control => {
-
-                    console.log('setcontrol-1')
                     const ratio = Math.min(0.02 * dt, 1);
                     const easeX = control.mouseX * (1 - ratio) + x * ratio;
                     const easeY = control.mouseY * (1 - ratio) + y * ratio;
@@ -1392,17 +1392,17 @@ function App() {
             console.log(record);
             const updateControl = (timestamp = performance.now()) => {
                 if (canceled) return;
+                const targetTime=timestamp-playTypeChangeTime;
                 setControl(control => {
                     // console.log(timestamp-playTypeChangeTime);
-                    const targetTime=timestamp-playTypeChangeTime;
                     const rawControlIndex=record[layer].reduce((p,c,i)=>c.t<=targetTime?i:p,undefined);
                     const rawControl=record[layer][rawControlIndex]?.c;
                     // console.log(rawControl);
                     latestMousePos.current=[rawControl?.mouseX,rawControl?.mouseY];
                     // setCurrentFrame(rawControlIndex);
-                    setEditorTimestamp(targetTime);
                     return config.parseControl({...control, ...rawControl});
                 })
+                setEditorTimestamp(targetTime);
                 setTimestamp(timestamp);
                 waitUntilNextFrame(updateControl);
             }
@@ -1427,7 +1427,33 @@ function App() {
             )
             setEditorTimestamp(timestamp - playTypeChangeTime);
         }
-    },[control, playType, playTypeChangeTime]);
+    },[control, layer, playType, playTypeChangeTime]);
+
+    useEffect(()=>{
+        if((playType===2||playType===0)&&record?.length){
+            const targetTime=editorTimestamp;
+            setControl(control => {
+                // console.log(timestamp-playTypeChangeTime);
+                const rawControlIndex=record[layer].reduce((p,c,i)=>c.t<=targetTime?i:p,undefined);
+                const rawControl={...record[layer][rawControlIndex]?.c};
+                const rawControlNext=record[layer][rawControlIndex+1]?.c;
+                // console.log(rawControl);
+                if(rawControlNext){
+                    console.log(rawControl,rawControlNext);
+                    const lt=record[layer][rawControlIndex]?.t;
+                    const rt=record[layer][rawControlIndex+1]?.t;
+                    const kl=(rt-targetTime)/(rt-lt);
+                    const kr=(targetTime-lt)/(rt-lt);
+                    rawControl.mouseX=rawControl?.mouseX*kl+rawControlNext?.mouseX*kr;
+                    rawControl.mouseY=rawControl?.mouseY*kl+rawControlNext?.mouseY*kr;
+                }
+                latestMousePos.current=[rawControl?.mouseX,rawControl?.mouseY];
+                // setCurrentFrame(rawControlIndex);
+                return config.parseControl({...control, ...rawControl});
+            })
+            if(playType===2)setTimestamp(editorTimestamp);
+        }
+    },[playType,editorTimestamp,record])
 
     const handleMouseMove = useCallback((e) => {
         if(playType===0||playType===-1) {
@@ -1455,7 +1481,7 @@ function App() {
                     handleMouseMove(e.touches?.[0]);
                 }}
             >
-                <Miku control={control} timestamp={timestamp} model={config.model} key={mikuResetter}></Miku>
+                <Miku control={control} timestamp={timestamp} model={config.model} runPhysics={runPhysics} key={mikuResetter}></Miku>
             </div>
 
         <div className='fps'>
@@ -1490,12 +1516,19 @@ function App() {
                     </ToggleButtonGroup>
                     &nbsp;
                     <ToggleButtonGroup>
-                        <ToggleButton value={-1}><FastRewind/></ToggleButton>
-                        <ToggleButton value={1}><FastForward/></ToggleButton>
+                        <ToggleButton value={-1} onClick={e=>{setEditorTimestamp(x=>x-100)}}><FastRewind/></ToggleButton>
+                        <ToggleButton value={1} onClick={e=>{setEditorTimestamp(x=>x+100)}}><FastForward/></ToggleButton>
                     </ToggleButtonGroup>
                     &nbsp;
                     <ToggleButtonGroup>
                         <ToggleButton value={1} onClick={()=>resetMiku()}><Refresh/></ToggleButton>
+                    </ToggleButtonGroup>
+                    &nbsp;
+                    <ToggleButtonGroup
+                        value={runPhysics}
+                        exclusive
+                        onChange={() =>setRunPhysics(x=>!x)}>
+                        <ToggleButton value={false} ><Lock/></ToggleButton>
                     </ToggleButtonGroup>
                     &nbsp;
                     <ToggleButtonGroup>
@@ -1517,9 +1550,9 @@ function App() {
                             FileSaver.saveAs(blob, "HMSR.json");
                         }} disabled={record?.length===0}><Save/></ToggleButton>
                     </ToggleButtonGroup>
-                    <div className='timedisplay'>
+                    <div className='timedisplay' onWheel={e=>{setEditorTimestamp(x=>x+e.deltaY)}}>
                         <b>{formatTime(editorTimestamp)}</b>
-                        <span className='small'>&nbsp;{Math.round(editorTimestamp%1000)}</span>
+                        <span className='small'>&nbsp;{Math.floor(editorTimestamp%1000/100)}</span>
                     </div>
                     {/*<div className='timedisplay'>/</div>*/}
                     {/*<div className='timedisplay'>*/}
