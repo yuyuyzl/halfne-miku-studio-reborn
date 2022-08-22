@@ -1,10 +1,8 @@
 import './App.less';
 import Miku from "./Miku/Miku";
 import {useCallback, useEffect, useRef, useState} from "react";
-
-import {getAbsolutePos, getConfig, parseModelJS, physicsRotation, physicsScaleY} from "./Engine/modelUtils";
 import {
-    Box, Button, ButtonGroup, Checkbox, FormControlLabel, FormGroup, Tab, Tabs, ToggleButton, ToggleButtonGroup
+    Box, Tab, Tabs, ToggleButton, ToggleButtonGroup
 } from "@mui/material";
 import FiberManualRecord from "@mui/icons-material/FiberManualRecord";
 import PlayArrow from "@mui/icons-material/PlayArrow";
@@ -31,6 +29,21 @@ let fpsArr=[];
 const formatTime=(millis)=>Math.floor(millis/1000/60)+':'+('00'+Math.floor(millis/1000%60)).slice(-2);
 
 function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,setLayer}){
+    const [scale,setScale]=useState(600);
+    const [centerOffset,setCenterOffset]=useState(30000);
+
+    useEffect(()=>{
+        if((editorTimestamp-centerOffset)/scale+50<0){
+            setCenterOffset(Math.max(scale*50,editorTimestamp))
+        }
+        if((-centerOffset)/scale+50>0){
+            setCenterOffset(scale*50);
+        }
+        if((editorTimestamp-centerOffset)/scale+50>100){
+            setCenterOffset(editorTimestamp)
+        }
+    },[editorTimestamp,scale,centerOffset])
+
     return <div className='timeline'>
         <div className='timeline-L'>
             <div className='timeline-L-toolbar'>
@@ -42,7 +55,10 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
             <div className='timeline-L-layer'>LAYER</div>
         </div>
         <div className='timeline-R'>
-            <div className='timeline-R-time'>TIME</div>
+            <div className='timeline-R-time' onWheel={e=>{setScale(x=>Math.max(x+e.deltaY,100))}}>
+                <div className='timeline-R-time-arrow' style={{left:((editorTimestamp-centerOffset)/scale+50)+'%'}}>
+                </div>
+            </div>
             <div className='timeline-R-content'>CONTENT</div>
         </div>
     </div>
@@ -53,6 +69,7 @@ function App() {
     const latestMousePos = useRef([W/2, H/2]);
     const latestMouseDown = useRef(false);
     const audioRef = useRef();
+    const editorTimestampOnPlay = useRef(0);
     const [timestamp, setTimestamp] = useState(performance.now());
 
     const [config, setConfig] = useState(defaultConfig);
@@ -86,6 +103,7 @@ function App() {
         .reduce((p, c) => [...p, ...c], []);
 
     const togglePlayType=v=> {
+        editorTimestampOnPlay.current=editorTimestamp;
         if (v === -1) {
             // setCurrentFrame(undefined);
             setRecord([]);
@@ -170,10 +188,9 @@ function App() {
         if(playType===1){
             let canceled = false;
             console.log(record);
-            const editorTimestampOnPlay=editorTimestamp;
             const updateControl = (timestamp = performance.now()) => {
                 if (canceled) return;
-                const targetTime=timestamp-playTypeChangeTime+editorTimestampOnPlay;
+                const targetTime=timestamp-playTypeChangeTime+editorTimestampOnPlay.current;
                 // setControl(control => {
                 //     // console.log(timestamp-playTypeChangeTime);
                 //     const rawControlIndex=record[layer].reduce((p,c,i)=>c.t<=targetTime?i:p,undefined);
@@ -200,13 +217,13 @@ function App() {
             setRecord(record => {
                     if(!record[layer])record[layer]=[];
                     record[layer].push({
-                        t: timestamp - playTypeChangeTime,
+                        t: timestamp - playTypeChangeTime+editorTimestampOnPlay.current,
                         c: {mouseX,mouseY,keyInput:keyInput?.length?keyInput:undefined},
                     });
                     return record;
                 }
             )
-            setEditorTimestamp(timestamp - playTypeChangeTime);
+            setEditorTimestamp(timestamp - playTypeChangeTime+editorTimestampOnPlay.current);
         }
     },[control, layer, playType, playTypeChangeTime]);
 
@@ -216,6 +233,7 @@ function App() {
             setControl(control => {
                 // console.log(timestamp-playTypeChangeTime);
                 const rawControlIndex=record[layer].reduce((p,c,i)=>c.t<=targetTime?i:p,undefined);
+                if(rawControlIndex===undefined)return config.parseControl({...control});
                 const rawControl={...record[layer][rawControlIndex]?.c};
                 const rawControlNext=record[layer][rawControlIndex+1]?.c;
                 // console.log(rawControl);

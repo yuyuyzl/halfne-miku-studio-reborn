@@ -79,7 +79,8 @@ export const physicsScaleY=(path)=>(control,config,physics)=>{
     if(!physics[path])return 1;
     const dx=selfPos?.x-physics[path]?.px;
     const dy=selfPos?.y-physics[path]?.py;
-    return Math.sqrt((dx*dx+dy*dy)/(selfConfig.massX*selfConfig.massX+selfConfig.massY*selfConfig.massY));
+    const ret= Math.sqrt((dx*dx+dy*dy)/(selfConfig.massX*selfConfig.massX+selfConfig.massY*selfConfig.massY));
+    return ret>1?1:ret;
 }
 
 export const parseModelJS=(code)=>{
