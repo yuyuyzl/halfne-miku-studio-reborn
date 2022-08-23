@@ -48,7 +48,7 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
         if((-centerOffset)/scale+50>0){
             setCenterOffset(scale*50);
         }
-    },[editorTimestamp,scale,centerOffset])
+    },[editorTimestamp])
 
     const handleTimelineMouse=e=>{
         const {x,width}=timelineRef.current.getBoundingClientRect();
@@ -74,7 +74,7 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                 onClick={handleTimelineMouse}
                 onMouseMove={e=>{e.buttons&&handleTimelineMouse(e)}}
             >
-                <div className='timeline-R-time-arrow' style={{left:t2l(editorTimestamp)+'%'}}/>
+                {(t2l(editorTimestamp)>=0&&t2l(editorTimestamp)<100)?<div className='timeline-R-time-arrow' style={{left:t2l(editorTimestamp)+'%'}}/>:null}
                 {marks.map(o=><div className='timeline-R-time-mark' style={{left: t2l(o) + '%'}}/>)}
                 {marks.map(o=><div className='timeline-R-time-time' style={{left:t2l(o)+'%'}}>{formatTime(o)}</div>)}
             </div>
