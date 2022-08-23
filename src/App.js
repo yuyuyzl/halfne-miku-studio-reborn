@@ -31,6 +31,7 @@ const formatTime=(millis)=>Math.floor(millis/1000/60)+':'+('00'+Math.floor(milli
 function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,setLayer}){
     const [scale,setScale]=useState(600);
     const [centerOffset,setCenterOffset]=useState(30000);
+    const timelineRef=useRef();
 
     const t2l=(timestamp)=>((timestamp-centerOffset)/scale+50);
     const l2t = (left) => centerOffset+(left-50)*scale;
@@ -49,6 +50,12 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
         }
     },[editorTimestamp,scale,centerOffset])
 
+    const handleTimelineMouse=e=>{
+        const {x,width}=timelineRef.current.getBoundingClientRect();
+        const {clientX}=e;
+        setEditorTimestamp(Math.max(l2t(100*(clientX-x)/width),0));
+    }
+
     return <div className='timeline'>
         <div className='timeline-L'>
             <div className='timeline-L-toolbar'>
@@ -60,12 +67,18 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
             <div className='timeline-L-layer'>LAYER</div>
         </div>
         <div className='timeline-R'>
-            <div className='timeline-R-time' onWheel={e=>{setScale(x=>Math.max(x+e.deltaY,100))}}>
+            <div
+                ref={timelineRef}
+                className='timeline-R-time'
+                onWheel={e=>{setScale(x=>Math.max(x+e.deltaY,100))}}
+                onClick={handleTimelineMouse}
+                onMouseMove={e=>{e.buttons&&handleTimelineMouse(e)}}
+            >
                 <div className='timeline-R-time-arrow' style={{left:t2l(editorTimestamp)+'%'}}/>
                 {marks.map(o=><div className='timeline-R-time-mark' style={{left: t2l(o) + '%'}}/>)}
                 {marks.map(o=><div className='timeline-R-time-time' style={{left:t2l(o)+'%'}}>{formatTime(o)}</div>)}
             </div>
-            <div className='timeline-R-content' onWheel={e=>{setCenterOffset(x=>Math.max(x+e.deltaY,scale*50))}}>CONTENT</div>
+            <div className='timeline-R-content' onWheel={e=>{setCenterOffset(x=>Math.max(x+e.deltaY*scale/100,scale*50))}}>CONTENT</div>
         </div>
     </div>
 }
@@ -73,7 +86,6 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
 function App() {
     const stageRef = useRef();
     const latestMousePos = useRef([W/2, H/2]);
-    const latestMouseDown = useRef(false);
     const audioRef = useRef();
     const editorTimestampOnPlay = useRef(0);
     const [timestamp, setTimestamp] = useState(performance.now());
@@ -279,9 +291,6 @@ function App() {
                 style={{width: W + 'px', height: H + 'px',backgroundColor:stageBackground,backgroundImage:'url("'+stageBackground+'")'}}
                 ref={stageRef}
                 onMouseMove={handleMouseMove}
-                onMouseDown={()=>{latestMouseDown.current=true}}
-                onMouseUp={()=>{latestMouseDown.current=false}}
-                onMouseLeave={()=>{latestMouseDown.current=false}}
                 onTouchMove={(e) => {
                     handleMouseMove(e.touches?.[0]);
                 }}
