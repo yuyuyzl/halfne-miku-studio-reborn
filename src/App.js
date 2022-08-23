@@ -32,15 +32,20 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
     const [scale,setScale]=useState(600);
     const [centerOffset,setCenterOffset]=useState(30000);
 
+    const t2l=(timestamp)=>((timestamp-centerOffset)/scale+50);
+    const l2t = (left) => centerOffset+(left-50)*scale;
+    const rulerScale=[1e3,2e3,5e3,1e4,2e4,6e4,12e4,3e5,6e5].reduce((p,c)=>p?p:c>=scale*5?c:0,0);
+    const marks=(new Array(Math.floor(scale*100/rulerScale))).fill(0)
+        .map((o,i)=>((Math.ceil(l2t(0)/rulerScale)+i)*rulerScale));
     useEffect(()=>{
         if((editorTimestamp-centerOffset)/scale+50<0){
-            setCenterOffset(Math.max(scale*50,editorTimestamp))
+            setCenterOffset(Math.max(scale*50,editorTimestamp-scale*40))
+        }
+        if((editorTimestamp-centerOffset)/scale+50>100){
+            setCenterOffset(editorTimestamp+scale*40)
         }
         if((-centerOffset)/scale+50>0){
             setCenterOffset(scale*50);
-        }
-        if((editorTimestamp-centerOffset)/scale+50>100){
-            setCenterOffset(editorTimestamp)
         }
     },[editorTimestamp,scale,centerOffset])
 
@@ -56,10 +61,11 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
         </div>
         <div className='timeline-R'>
             <div className='timeline-R-time' onWheel={e=>{setScale(x=>Math.max(x+e.deltaY,100))}}>
-                <div className='timeline-R-time-arrow' style={{left:((editorTimestamp-centerOffset)/scale+50)+'%'}}>
-                </div>
+                <div className='timeline-R-time-arrow' style={{left:t2l(editorTimestamp)+'%'}}/>
+                {marks.map(o=><div className='timeline-R-time-mark' style={{left: t2l(o) + '%'}}/>)}
+                {marks.map(o=><div className='timeline-R-time-time' style={{left:t2l(o)+'%'}}>{formatTime(o)}</div>)}
             </div>
-            <div className='timeline-R-content'>CONTENT</div>
+            <div className='timeline-R-content' onWheel={e=>{setCenterOffset(x=>Math.max(x+e.deltaY,scale*50))}}>CONTENT</div>
         </div>
     </div>
 }
