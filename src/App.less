@@ -57,6 +57,17 @@
       align-items: center;
       justify-content: center;
     }
+    &-layer{
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      &-item{
+        width: 100%;
+        height: 24px;
+        line-height: 24px;
+      }
+    }
   }
   &-R{
     flex: 1;
@@ -92,6 +103,21 @@
     }
     &-content{
       position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      &-layer{
+        position: relative;
+        width: 100%;
+        height: 24px;
+        &-block{
+          box-sizing: border-box;
+          position: absolute;
+          height: 24px;
+          border: 1px solid #000;
+          background: #888888;
+        }
+      }
     }
   }
 }

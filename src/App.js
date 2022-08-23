@@ -45,10 +45,12 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
         if((editorTimestamp-centerOffset)/scale+50>100){
             setCenterOffset(editorTimestamp+scale*40)
         }
+    },[editorTimestamp])
+    useEffect(()=>{
         if((-centerOffset)/scale+50>0){
             setCenterOffset(scale*50);
         }
-    },[editorTimestamp])
+    },[scale])
 
     const handleTimelineMouse=e=>{
         const {x,width}=timelineRef.current.getBoundingClientRect();
@@ -64,7 +66,17 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                     <span className='small'>&nbsp;{('000'+Math.floor(editorTimestamp%1000)).slice(-3)}</span>
                 </div>
             </div>
-            <div className='timeline-L-layer'>LAYER</div>
+            <div className='timeline-L-layer'>
+
+                <div className='timeline-L-layer-item'>
+                    New Layer
+                </div>
+                {record.map((o,i)=>
+                    <div className='timeline-L-layer-item'>
+                        Layer {i}
+                    </div>
+                )}
+            </div>
         </div>
         <div className='timeline-R'>
             <div
@@ -78,7 +90,21 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                 {marks.map(o=><div className='timeline-R-time-mark' style={{left: t2l(o) + '%'}}/>)}
                 {marks.map(o=><div className='timeline-R-time-time' style={{left:t2l(o)+'%'}}>{formatTime(o)}</div>)}
             </div>
-            <div className='timeline-R-content' onWheel={e=>{setCenterOffset(x=>Math.max(x+e.deltaY*scale/100,scale*50))}}>CONTENT</div>
+            <div
+                className='timeline-R-content'
+                onMouseMove={e=>{e.buttons&&handleTimelineMouse(e)}}
+                onWheel={e=>{setCenterOffset(x=>Math.max(x+e.deltaY*scale/100,scale*50))}}
+            >
+                <div className='timeline-R-content-layer'>
+                </div>
+                {record.map((o,i)=>
+                    <div className='timeline-R-content-layer'>
+                        <div className='timeline-R-content-layer-block' style={{left:t2l(o[0].t) + '%',right:(100-t2l(o[o.length-1].t)) + '%'}}>
+
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     </div>
 }
