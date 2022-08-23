@@ -36,8 +36,8 @@
   cursor: ns-resize;
   user-select: none;
   font-size: 20px;
-  width: 160px;
-  text-align: center;
+  width: 200px;
+  text-align: left;
   .small{
     font-size: 16px;
   }
@@ -56,6 +56,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      border-bottom: 1px solid #aaa;
     }
     &-layer{
       position: relative;
@@ -75,6 +76,7 @@
       height: 32px;
       position: relative;
       user-select: none;
+      border-bottom: 1px solid #aaa;
       &-arrow{
         height: 0;
         width: 0;
@@ -87,7 +89,7 @@
       &-mark{
         height: 6px;
         width: 0;
-        border-left: 1px solid #888;
+        border-left: 1px solid #aaa;
         position: absolute;
         bottom: 0;
         font-size: 10px;
@@ -116,6 +118,7 @@
           height: 24px;
           border: 1px solid #000;
           background: #888888;
+          border-radius: 3px;
         }
       }
     }
