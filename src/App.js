@@ -107,7 +107,7 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                         {o.length?<div className='timeline-R-content-layer-block'
                               style={{left: t2l(o[0].t) + '%', right: (100 - t2l(o[o.length - 1].t)) + '%'}}>
                         </div>:null}
-                        {scale<100?o.map((r,i)=>(t2l(r.t)>=0&&t2l(r.t)<100&&i!==o.length-1)?<div className='timeline-R-content-layer-control' style={{left: t2l(r.t) + '%'}}></div>:null):null}
+                        {scale<100?o.map((r,i)=>(t2l(r.t)>=0&&t2l(r.t)<100&&i!==o.length-1)?<div className='timeline-R-content-layer-control' style={{left: t2l(r.t) + '%'}} title={JSON.stringify(r.c)}/>:null):null}
                     </div>
                 )}
                 <div className='timeline-R-content-layer'/>
