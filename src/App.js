@@ -68,14 +68,21 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
             </div>
             <div className='timeline-L-layer'>
 
-                <div className='timeline-L-layer-item'>
-                    New Layer
-                </div>
                 {record.map((o,i)=>
-                    <div className='timeline-L-layer-item'>
+                    <div
+                        className={'timeline-L-layer-item '+(i===layer?'timeline-L-layer-item-selected':"")}
+                        onClick={()=>setLayer(i)}
+                    >
                         Layer {i}
                     </div>
                 )}
+
+                <div
+                    className={'timeline-L-layer-item '+(undefined===layer?'timeline-L-layer-item-selected':"")}
+                    onClick={()=>setLayer(undefined)}
+                >
+                    New Layer
+                </div>
             </div>
         </div>
         <div className='timeline-R'>
@@ -95,15 +102,15 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                 onMouseMove={e=>{e.buttons&&handleTimelineMouse(e)}}
                 onWheel={e=>{setCenterOffset(x=>Math.max(x+e.deltaY*scale/100,scale*50))}}
             >
-                <div className='timeline-R-content-layer'>
-                </div>
+
                 {record.map((o,i)=>
                     <div className='timeline-R-content-layer'>
-                        <div className='timeline-R-content-layer-block' style={{left:t2l(o[0].t) + '%',right:(100-t2l(o[o.length-1].t)) + '%'}}>
-
-                        </div>
+                        {o.length?<div className='timeline-R-content-layer-block'
+                              style={{left: t2l(o[0].t) + '%', right: (100 - t2l(o[o.length - 1].t)) + '%'}}>
+                        </div>:null}
                     </div>
                 )}
+                <div className='timeline-R-content-layer'/>
             </div>
         </div>
     </div>
@@ -112,6 +119,7 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
 function App() {
     const stageRef = useRef();
     const latestMousePos = useRef([W/2, H/2]);
+    const latestMouseDown = useRef(false);
     const audioRef = useRef();
     const editorTimestampOnPlay = useRef(0);
     const [timestamp, setTimestamp] = useState(performance.now());
@@ -132,7 +140,7 @@ function App() {
     const [record,setRecord]=useState([]);
     const [mikuResetter,setMikuResetter]=useState(0);
     const [stageBackground,setStageBackground]=useState(Object?.entries?.(config.background)?.[0]?.[1]||'#FFFFFF');
-    const [layer,setLayer]=useState(0);
+    const [layer,setLayer]=useState();
     const [editorTimestamp,setEditorTimestamp]=useState(0);
     const [runPhysics,setRunPhysics]=useState(true);
     const [audioFile,setAudioFile]=useState();
@@ -150,7 +158,11 @@ function App() {
         editorTimestampOnPlay.current=editorTimestamp;
         if (v === -1) {
             // setCurrentFrame(undefined);
-            setRecord([]);
+            if(layer===undefined)setLayer(record.length)
+            else setRecord(record=>{
+                record[layer]=[]
+                return record;
+            })
         }
         if (v === 1) {
             if (!record.length)return;
@@ -276,23 +288,27 @@ function App() {
             const targetTime=editorTimestamp;
             setControl(control => {
                 // console.log(timestamp-playTypeChangeTime);
-                const rawControlIndex=record[layer].reduce((p,c,i)=>c.t<=targetTime?i:p,undefined);
-                if(rawControlIndex===undefined)return config.parseControl({...control});
-                const rawControl={...record[layer][rawControlIndex]?.c};
-                const rawControlNext=record[layer][rawControlIndex+1]?.c;
-                // console.log(rawControl);
-                if(rawControlNext){
-                    // console.log(rawControl,rawControlNext);
-                    const lt=record[layer][rawControlIndex]?.t;
-                    const rt=record[layer][rawControlIndex+1]?.t;
-                    const kl=(rt-targetTime)/(rt-lt);
-                    const kr=(targetTime-lt)/(rt-lt);
-                    rawControl.mouseX=rawControl?.mouseX*kl+rawControlNext?.mouseX*kr;
-                    rawControl.mouseY=rawControl?.mouseY*kl+rawControlNext?.mouseY*kr;
-                }
-                latestMousePos.current=[rawControl?.mouseX,rawControl?.mouseY];
+                const layerControls=record.map(layerData=>{
+                    const rawControlIndex=layerData?.reduce?.((p,c,i)=>c.t<=targetTime?i:p,undefined);
+                    if(rawControlIndex===undefined)return {};
+                    const rawControl={...layerData[rawControlIndex]?.c};
+                    const rawControlNext=layerData[rawControlIndex+1]?.c;
+                    // console.log(rawControl);
+                    if(rawControlNext){
+                        // console.log(rawControl,rawControlNext);
+                        const lt=layerData[rawControlIndex]?.t;
+                        const rt=layerData[rawControlIndex+1]?.t;
+                        const kl=(rt-targetTime)/(rt-lt);
+                        const kr=(targetTime-lt)/(rt-lt);
+                        rawControl.mouseX=rawControl?.mouseX*kl+rawControlNext?.mouseX*kr;
+                        rawControl.mouseY=rawControl?.mouseY*kl+rawControlNext?.mouseY*kr;
+                    }
+                    return rawControl;
+                })
+                const newControl=layerControls.reduce((p,c)=>({...p,...c,keyInput:[...(p.keyInput||[]),...(c.keyInput||[])]}),{})
+                latestMousePos.current=[newControl?.mouseX,newControl?.mouseY];
                 // setCurrentFrame(rawControlIndex);
-                return config.parseControl({...control, ...rawControl});
+                return config.parseControl({...control,...newControl});
             })
             if(playType===2)setTimestamp(editorTimestamp);
         }
@@ -317,6 +333,9 @@ function App() {
                 style={{width: W + 'px', height: H + 'px',backgroundColor:stageBackground,backgroundImage:'url("'+stageBackground+'")'}}
                 ref={stageRef}
                 onMouseMove={handleMouseMove}
+                onMouseDown={()=>{latestMouseDown.current=true}}
+                onMouseUp={()=>{latestMouseDown.current=false}}
+                onMouseLeave={()=>{latestMouseDown.current=false}}
                 onTouchMove={(e) => {
                     handleMouseMove(e.touches?.[0]);
                 }}
