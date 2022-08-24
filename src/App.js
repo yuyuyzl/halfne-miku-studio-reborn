@@ -93,9 +93,9 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                 onClick={handleTimelineMouse}
                 onMouseMove={e=>{e.buttons&&handleTimelineMouse(e)}}
             >
-                {(t2l(editorTimestamp)>=0&&t2l(editorTimestamp)<100)?<div className='timeline-R-time-arrow' style={{left:t2l(editorTimestamp)+'%'}}/>:null}
                 {marks.map(o=><div className='timeline-R-time-mark' style={{left: t2l(o) + '%'}}/>)}
                 {marks.map(o=><div className='timeline-R-time-time' style={{left:t2l(o)+'%'}}>{formatTime(o)}</div>)}
+                {(t2l(editorTimestamp)>=0&&t2l(editorTimestamp)<100)?<div className='timeline-R-time-arrow' style={{left:t2l(editorTimestamp)+'%'}}/>:null}
             </div>
             <div
                 className='timeline-R-content'
@@ -274,7 +274,7 @@ function App() {
                     if(!record[layer])record[layer]=[];
                     record[layer].push({
                         t: timestamp - playTypeChangeTime+editorTimestampOnPlay.current,
-                        c: {mouseX,mouseY,keyInput:keyInput?.length?keyInput:undefined},
+                        c: {mouseX:latestMouseDown.current?mouseX:undefined,mouseY:latestMouseDown.current?mouseY:undefined,keyInput:keyInput?.length?keyInput:undefined},
                     });
                     return record;
                 }
@@ -294,7 +294,7 @@ function App() {
                     const rawControl={...layerData[rawControlIndex]?.c};
                     const rawControlNext=layerData[rawControlIndex+1]?.c;
                     // console.log(rawControl);
-                    if(rawControlNext){
+                    if(rawControlNext&&rawControl.mouseX!==undefined&&rawControlNext.mouseX!==undefined){
                         // console.log(rawControl,rawControlNext);
                         const lt=layerData[rawControlIndex]?.t;
                         const rt=layerData[rawControlIndex+1]?.t;
@@ -303,12 +303,23 @@ function App() {
                         rawControl.mouseX=rawControl?.mouseX*kl+rawControlNext?.mouseX*kr;
                         rawControl.mouseY=rawControl?.mouseY*kl+rawControlNext?.mouseY*kr;
                     }
+                    if(rawControl?.mouseX===undefined){
+                        delete rawControl.mouseX;
+                        delete rawControl.mouseY;
+                    }
                     return rawControl;
                 })
+                // debugger;
                 const newControl=layerControls.reduce((p,c)=>({...p,...c,keyInput:[...(p.keyInput||[]),...(c.keyInput||[])]}),{})
-                latestMousePos.current=[newControl?.mouseX,newControl?.mouseY];
-                // setCurrentFrame(rawControlIndex);
+                if(newControl?.mouseX!==undefined)
+                    latestMousePos.current=[newControl?.mouseX,newControl?.mouseY];
+                else {
+                    delete newControl.mouseX;
+                    delete newControl.mouseY;
+                }
+                console.log(newControl);
                 return config.parseControl({...control,...newControl});
+                // setCurrentFrame(rawControlIndex);
             })
             if(playType===2)setTimestamp(editorTimestamp);
         }
