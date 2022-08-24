@@ -35,7 +35,7 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
 
     const t2l=(timestamp)=>((timestamp-centerOffset)/scale+50);
     const l2t = (left) => centerOffset+(left-50)*scale;
-    const rulerScale=[1e3,2e3,5e3,1e4,2e4,6e4,12e4,3e5,6e5].reduce((p,c)=>p?p:c>=scale*5?c:0,0);
+    const rulerScale=[1e2,2e2,5e2,1e3,2e3,5e3,1e4,2e4,6e4,12e4,3e5,6e5].reduce((p,c)=>p?p:c>=scale*5?c:0,0);
     const marks=(new Array(Math.floor(scale*100/rulerScale))).fill(0)
         .map((o,i)=>((Math.ceil(l2t(0)/rulerScale)+i)*rulerScale));
     useEffect(()=>{
@@ -89,12 +89,12 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
             <div
                 ref={timelineRef}
                 className='timeline-R-time'
-                onWheel={e=>{setScale(x=>Math.max(x+e.deltaY,100))}}
+                onWheel={e=>{setScale(x=>Math.max(x+e.deltaY,10))}}
                 onClick={handleTimelineMouse}
                 onMouseMove={e=>{e.buttons&&handleTimelineMouse(e)}}
             >
                 {marks.map(o=><div className='timeline-R-time-mark' style={{left: t2l(o) + '%'}}/>)}
-                {marks.map(o=><div className='timeline-R-time-time' style={{left:t2l(o)+'%'}}>{formatTime(o)}</div>)}
+                {marks.map(o=>o%1000===0?<div className='timeline-R-time-time' style={{left: t2l(o)+'%'}}>{formatTime(o)}</div>:null)}
                 {(t2l(editorTimestamp)>=0&&t2l(editorTimestamp)<100)?<div className='timeline-R-time-arrow' style={{left:t2l(editorTimestamp)+'%'}}/>:null}
             </div>
             <div
@@ -102,12 +102,12 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                 onMouseMove={e=>{e.buttons&&handleTimelineMouse(e)}}
                 onWheel={e=>{setCenterOffset(x=>Math.max(x+e.deltaY*scale/100,scale*50))}}
             >
-
                 {record.map((o,i)=>
                     <div className='timeline-R-content-layer'>
                         {o.length?<div className='timeline-R-content-layer-block'
                               style={{left: t2l(o[0].t) + '%', right: (100 - t2l(o[o.length - 1].t)) + '%'}}>
                         </div>:null}
+                        {scale<100?o.map((r,i)=>(t2l(r.t)>=0&&t2l(r.t)<100&&i!==o.length-1)?<div className='timeline-R-content-layer-control' style={{left: t2l(r.t) + '%'}}></div>:null):null}
                     </div>
                 )}
                 <div className='timeline-R-content-layer'/>
@@ -176,6 +176,25 @@ function App() {
                 audioRef.current.pause();
             }
         }
+
+        if(playType===-1){
+            setRecord(record=>{
+                record[layer].forEach((o,i)=>{
+                    if(i===record[layer].length-1||i===0)return;
+                    // debugger;
+                    if(
+                        (record[layer][i-1].c.mouseX===record[layer][i].c.mouseX)&&
+                        (record[layer][i+1].c.mouseX===record[layer][i].c.mouseX)&&
+                        (record[layer][i-1].c.mouseY===record[layer][i].c.mouseY)&&
+                        (record[layer][i+1].c.mouseY===record[layer][i].c.mouseY)&&
+                        (record[layer][i-1].c.keyInput?.join('||')===record[layer][i].c.keyInput?.join('||'))
+                    )record[layer][i].del=true;
+                })
+                record[layer]=record[layer].filter(o=>!o.del);
+                return record;
+            })
+        }
+
         setPlayType(v || 0);
         setPlayTypeChangeTime(performance.now());
     }
@@ -354,9 +373,9 @@ function App() {
                 <Miku control={control} timestamp={timestamp} model={config.model} runPhysics={runPhysics} key={mikuResetter}></Miku>
             </div>
 
-        <div className='fps'>
+        {playType!==2?<div className='fps'>
             <b>FPS: </b>{Math.round(fps)}
-        </div>
+        </div>:null}
             <div className="controls">
                 {/*<FormControlLabel control={<Checkbox checked={checked} onChange={e=>setChecked(e.target.checked)}/>} label="Label"/>*/}
                 <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
