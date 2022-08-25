@@ -29,7 +29,7 @@ let fpsArr=[];
 const formatTime=(millis)=>Math.floor(millis/1000/60)+':'+('00'+Math.floor(millis/1000%60)).slice(-2);
 
 function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,setLayer}){
-    const [scale,setScale]=useState(600);
+    const [scale,setScale]=useState(50);
     const [centerOffset,setCenterOffset]=useState(30000);
     const timelineRef=useRef();
 
@@ -56,6 +56,16 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
         const {x,width}=timelineRef.current.getBoundingClientRect();
         const {clientX}=e;
         setEditorTimestamp(Math.max(l2t(100*(clientX-x)/width),0));
+    }
+
+    const clearSelection=()=>{
+        setRecord(record=>{
+            for (let l of record)
+                for (let c of l){
+                    if(c.selected)delete c.selected
+                }
+            return record;
+        })
     }
 
     return <div className='timeline'>
@@ -99,15 +109,30 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
             </div>
             <div
                 className='timeline-R-content'
-                onMouseMove={e=>{e.buttons&&handleTimelineMouse(e)}}
+                // onMouseMove={e=>{e.buttons&&handleTimelineMouse(e)}}
                 onWheel={e=>{setCenterOffset(x=>Math.max(x+e.deltaY*scale/100,scale*50))}}
             >
                 {record.map((o,i)=>
                     <div className='timeline-R-content-layer'>
                         {o.length?<div className='timeline-R-content-layer-block'
-                              style={{left: t2l(o[0].t) + '%', right: (100 - t2l(o[o.length - 1].t)) + '%'}}>
+                              style={{left: t2l(o[0].t) + '%', right: 'calc( '+(100 - t2l(o[o.length - 1].t)) + '% - 1px '}}>
                         </div>:null}
-                        {scale<100?o.map((r,i)=>(t2l(r.t)>=0&&t2l(r.t)<100&&i!==o.length-1)?<div className='timeline-R-content-layer-control' style={{left: t2l(r.t) + '%'}} title={JSON.stringify(r.c)}/>:null):null}
+                        {scale<100?o.map((r)=>(t2l(r.t)>=0&&t2l(r.t)<100)?
+                            <div
+                                className={'timeline-R-content-layer-control'+(r.selected?' timeline-R-content-layer-control-selected':'')}
+                                style={{left: t2l(r.t) + '%'}}
+                                title={JSON.stringify(r.c)}
+                                onMouseDown={(e)=>{
+                                    for (let l of record)
+                                    for (let c of l)
+                                        if(c.selected)delete c.selected;
+                                    r.selected=true;
+                                    setRecord([...record]);
+                                    setEditorTimestamp(r.t);
+                                    // e.stopPropagation();
+                                }}
+                            />
+                            :null):null}
                     </div>
                 )}
                 <div className='timeline-R-content-layer'/>
@@ -135,7 +160,7 @@ function App() {
     const [tabPage, setTabPage] = useState(0);
 
     const [playType,setPlayType]=useState(0);
-    const [playTypeChangeTime,setPlayTypeChangeTime]=useState();
+    const playTypeChangeTime=useRef();
     // const [currentFrame,setCurrentFrame]=useState();
     const [record,setRecord]=useState([]);
     const [mikuResetter,setMikuResetter]=useState(0);
@@ -196,7 +221,7 @@ function App() {
         }
 
         setPlayType(v || 0);
-        setPlayTypeChangeTime(performance.now());
+        playTypeChangeTime.current=(performance.now());
     }
 
     useEffect(() => {
@@ -216,6 +241,41 @@ function App() {
             })
         }
     }, [fpsTarget]);
+
+    useEffect(()=>{
+        const keyboardHandler=e=>{
+            if (e.type === 'keydown') {
+                console.log(e);
+                switch (e.key){
+                    case ' ':
+                        if(playType===0||playType===2) {
+                            if (e.shiftKey) togglePlayType(-1);
+                            else togglePlayType(1);
+                        }else {
+                            togglePlayType(2);
+                        }
+                        break;
+                    case 'Escape':
+                        setRecord(record=>{
+                            for (let l of record)
+                                for (let c of l){
+                                    if(c.selected)delete c.selected
+                                }
+                            return [...record];
+                        })
+                        break;
+                }
+            }
+            e.preventDefault();
+        }
+        window.addEventListener('keydown', keyboardHandler);
+        window.addEventListener('keyup', keyboardHandler);
+        return ()=>{
+
+            window.removeEventListener('keydown', keyboardHandler);
+            window.removeEventListener('keyup', keyboardHandler);
+        }
+    },[playType, togglePlayType])
 
     useEffect(() => {
         if(playType===0||playType===-1) {
@@ -265,7 +325,7 @@ function App() {
             console.log(record);
             const updateControl = (timestamp = performance.now()) => {
                 if (canceled) return;
-                const targetTime=timestamp-playTypeChangeTime+editorTimestampOnPlay.current;
+                const targetTime=timestamp-playTypeChangeTime.current+editorTimestampOnPlay.current;
                 // setControl(control => {
                 //     // console.log(timestamp-playTypeChangeTime);
                 //     const rawControlIndex=record[layer].reduce((p,c,i)=>c.t<=targetTime?i:p,undefined);
@@ -284,23 +344,24 @@ function App() {
                 canceled = true;
             }
         }
-    }, [playType,playTypeChangeTime]);
+    }, [playType]);
 
     useEffect(()=>{
         if (playType === -1) {
             const {mouseX,mouseY,timestamp,keyInput}=control;
+            // debugger;
             setRecord(record => {
                     if(!record[layer])record[layer]=[];
                     record[layer].push({
-                        t: timestamp - playTypeChangeTime+editorTimestampOnPlay.current,
+                        t: record[layer].length===0?editorTimestampOnPlay.current:timestamp - playTypeChangeTime.current+editorTimestampOnPlay.current,
                         c: {mouseX:latestMouseDown.current?mouseX:undefined,mouseY:latestMouseDown.current?mouseY:undefined,keyInput:keyInput?.length?keyInput:undefined},
                     });
                     return record;
                 }
             )
-            setEditorTimestamp(timestamp - playTypeChangeTime+editorTimestampOnPlay.current);
+            setEditorTimestamp(timestamp - playTypeChangeTime.current+editorTimestampOnPlay.current);
         }
-    },[control, layer, playType, playTypeChangeTime]);
+    },[control, layer, playType]);
 
     useEffect(()=>{
         if((playType===2||playType===0||playType===1)&&record?.length){

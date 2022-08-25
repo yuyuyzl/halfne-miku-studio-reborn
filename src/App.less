@@ -121,13 +121,18 @@ body{
         width: 100%;
         height: 24px;
         &-control{
-          box-sizing: border-box;
           position: absolute;
+          box-sizing: border-box;
           height: 8px;
-          width: 1px;
+          width: 3px;
+          transform: translateX(-1px);
           background: #666;
           top: 8px;
           cursor: ew-resize;
+          &-selected{
+            outline: 2px solid #ff5c5c;
+            background: #FFF;
+          }
         }
         &-block{
           box-sizing: border-box;
