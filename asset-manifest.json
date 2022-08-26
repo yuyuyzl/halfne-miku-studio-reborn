@@ -1,22 +1,22 @@
 {
   "files": {
     "main.css": "/halfne-miku-studio-reborn/static/css/main.6dea0f05.chunk.css",
-    "main.js": "/halfne-miku-studio-reborn/static/js/main.67eae631.chunk.js",
-    "main.js.map": "/halfne-miku-studio-reborn/static/js/main.67eae631.chunk.js.map",
+    "main.js": "/halfne-miku-studio-reborn/static/js/main.b63232f8.chunk.js",
+    "main.js.map": "/halfne-miku-studio-reborn/static/js/main.b63232f8.chunk.js.map",
     "runtime-main.js": "/halfne-miku-studio-reborn/static/js/runtime-main.a882b799.js",
     "runtime-main.js.map": "/halfne-miku-studio-reborn/static/js/runtime-main.a882b799.js.map",
-    "static/js/2.a85c695e.chunk.js": "/halfne-miku-studio-reborn/static/js/2.a85c695e.chunk.js",
-    "static/js/2.a85c695e.chunk.js.map": "/halfne-miku-studio-reborn/static/js/2.a85c695e.chunk.js.map",
+    "static/js/2.b639cfe3.chunk.js": "/halfne-miku-studio-reborn/static/js/2.b639cfe3.chunk.js",
+    "static/js/2.b639cfe3.chunk.js.map": "/halfne-miku-studio-reborn/static/js/2.b639cfe3.chunk.js.map",
     "static/js/3.e0e6bcb9.chunk.js": "/halfne-miku-studio-reborn/static/js/3.e0e6bcb9.chunk.js",
     "static/js/3.e0e6bcb9.chunk.js.map": "/halfne-miku-studio-reborn/static/js/3.e0e6bcb9.chunk.js.map",
     "index.html": "/halfne-miku-studio-reborn/index.html",
     "static/css/main.6dea0f05.chunk.css.map": "/halfne-miku-studio-reborn/static/css/main.6dea0f05.chunk.css.map",
-    "static/js/2.a85c695e.chunk.js.LICENSE.txt": "/halfne-miku-studio-reborn/static/js/2.a85c695e.chunk.js.LICENSE.txt"
+    "static/js/2.b639cfe3.chunk.js.LICENSE.txt": "/halfne-miku-studio-reborn/static/js/2.b639cfe3.chunk.js.LICENSE.txt"
   },
   "entrypoints": [
     "static/js/runtime-main.a882b799.js",
-    "static/js/2.a85c695e.chunk.js",
+    "static/js/2.b639cfe3.chunk.js",
     "static/css/main.6dea0f05.chunk.css",
-    "static/js/main.67eae631.chunk.js"
+    "static/js/main.b63232f8.chunk.js"
   ]
 }
