@@ -266,7 +266,7 @@ function App() {
     }, [fpsTarget]);
 
     useEffect(()=>{
-        const keyboardHandler=e=>{
+        const editorKeyboardHandler=e=>{
             if (e.type === 'keydown') {
                 console.log(e);
                 switch (e.key){
@@ -290,13 +290,41 @@ function App() {
                     case 'Delete':
                         setRecord(record=>record.map(l=>l.filter(o=>!o.selected)));
                         break;
+                    case 'Enter':
+                        setRecord(record=>{
+                            for (let l of record) {
+                                for (let c of l) {
+                                    if (c.selected) {
+                                        c.c.keyInput=parseKeyMapping(window.keyList,keyMapping);
+                                    }
+                                }
+                            }
+                            return [...record];
+                        })
+                        break;
                 }
             }
             e.preventDefault();
         }
+        window.addEventListener('keydown', editorKeyboardHandler);
+        window.addEventListener('keyup', editorKeyboardHandler);
+
+
+        const keyboardHandler = e => {
+            if (e.type === 'keydown') {
+                if (!window.keyList.includes(e.key)) window.keyList.push(e.key);
+            } else {
+                window.keyList = window.keyList.filter(o => o !== e.key);
+            }
+            e.preventDefault();
+            console.log(window.keyList);
+        };
+
         window.addEventListener('keydown', keyboardHandler);
         window.addEventListener('keyup', keyboardHandler);
         return ()=>{
+            window.removeEventListener('keydown', editorKeyboardHandler);
+            window.removeEventListener('keyup', editorKeyboardHandler);
 
             window.removeEventListener('keydown', keyboardHandler);
             window.removeEventListener('keyup', keyboardHandler);
@@ -306,17 +334,6 @@ function App() {
     useEffect(() => {
         if(playType===0||playType===-1) {
             if (!window.keyList) window.keyList = []
-            const keyboardHandler = e => {
-                if (e.type === 'keydown') {
-                    if (!window.keyList.includes(e.key)) window.keyList.push(e.key);
-                } else {
-                    window.keyList = window.keyList.filter(o => o !== e.key);
-                }
-                e.preventDefault();
-                console.log(window.keyList);
-            };
-            window.addEventListener('keydown', keyboardHandler);
-            window.addEventListener('keyup', keyboardHandler);
             let lastTime = performance.now();
             let canceled = false;
             const updateControl = (timestamp = performance.now()) => {
@@ -341,8 +358,6 @@ function App() {
             }
             waitUntilNextFrame(updateControl);
             return () => {
-                window.removeEventListener('keydown', keyboardHandler);
-                window.removeEventListener('keyup', keyboardHandler);
                 canceled = true;
             }
         }
