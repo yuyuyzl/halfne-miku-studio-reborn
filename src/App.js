@@ -28,10 +28,20 @@ let fpsArr=[];
 
 const formatTime=(millis)=>Math.floor(millis/1000/60)+':'+('00'+Math.floor(millis/1000%60)).slice(-2);
 
+const getSelection=(record)=>{
+    for (let l of record)
+        for (let c of l){
+            if(c.selected)return record;
+        }
+    return undefined;
+
+}
+
 function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,setLayer}){
     const [scale,setScale]=useState(50);
     const [centerOffset,setCenterOffset]=useState(30000);
     const timelineRef=useRef();
+    const selectionDragging=useRef(false);
 
     const t2l=(timestamp)=>((timestamp-centerOffset)/scale+50);
     const l2t = (left) => centerOffset+(left-50)*scale;
@@ -56,16 +66,6 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
         const {x,width}=timelineRef.current.getBoundingClientRect();
         const {clientX}=e;
         setEditorTimestamp(Math.max(l2t(100*(clientX-x)/width),0));
-    }
-
-    const clearSelection=()=>{
-        setRecord(record=>{
-            for (let l of record)
-                for (let c of l){
-                    if(c.selected)delete c.selected
-                }
-            return record;
-        })
     }
 
     return <div className='timeline'>
@@ -111,6 +111,21 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                 className='timeline-R-content'
                 // onMouseMove={e=>{e.buttons&&handleTimelineMouse(e)}}
                 onWheel={e=>{setCenterOffset(x=>Math.max(x+e.deltaY*scale/100,scale*50))}}
+                onMouseMove={e=>{
+                    if(e.buttons){
+                        const {x,width}=timelineRef.current.getBoundingClientRect();
+                        const {clientX}=e;
+                        const newTS=(Math.max(l2t(100*(clientX-x)/width),0));
+                        setRecord(record=> {
+                                for (let l of record)
+                                    for (let c of l) {
+                                        if (c.selected) c.t = newTS;
+                                    }
+                                return [...record];
+                            }
+                        )
+                    }
+                }}
             >
                 {record.map((o,i)=>
                     <div className='timeline-R-content-layer'>
@@ -129,7 +144,17 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                                     r.selected=true;
                                     setRecord([...record]);
                                     setEditorTimestamp(r.t);
+                                    selectionDragging.current=true;
                                     // e.stopPropagation();
+                                }}
+                                onMouseUp={()=>{
+                                    for (let l of record)
+                                    for (let c of l)
+                                        if(c.selected)delete c.selected;
+                                    r.selected=true;
+                                    setRecord([...record]);
+                                    setEditorTimestamp(r.t);
+                                    selectionDragging.current=false;
                                 }}
                             />
                             :null):null}
@@ -397,7 +422,7 @@ function App() {
                     delete newControl.mouseX;
                     delete newControl.mouseY;
                 }
-                console.log(newControl);
+                // console.log(newControl);
                 return config.parseControl({...control,...newControl});
                 // setCurrentFrame(rawControlIndex);
             })
@@ -432,6 +457,7 @@ function App() {
                 }}
             >
                 <Miku control={control} timestamp={timestamp} model={config.model} runPhysics={runPhysics} key={mikuResetter}></Miku>
+                {<div className={'mouse'} style={{left: control.mouseX + 'px', top: control.mouseY + 'px'}}/>}
             </div>
 
         {playType!==2?<div className='fps'>
