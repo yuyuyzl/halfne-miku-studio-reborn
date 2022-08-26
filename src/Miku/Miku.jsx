@@ -11,21 +11,25 @@ export default function Miku(props){
     const [renderState,setRenderState]=useState();
 
     const work=(timestamp)=> {
-        const dt = Math.min(timestamp - lastTime.current,50);
+        const dt = Math.min(timestamp - lastTime.current, 50);
         // console.log(timestamp,dt);
         lastTime.current = timestamp;
-        let currentRenderState=parseConfig(model,control,physics);
+        const shouldResetPhysics = (dt > 200 || dt < 0 || !runPhysics);
+        let _physics=physics;
+        if (shouldResetPhysics) {
+            _physics=getInitPhysics(parseConfig(model, control), false);
+            setPhysics(_physics);
+        }
+        let currentRenderState = parseConfig(model, control, _physics);
         setRenderState(currentRenderState);
-        if(dt>1000||dt<0||!runPhysics)setPhysics(physics => {
-            return getInitPhysics(parseConfig(model,control),false);
-        }); else if(dt!==0)
-        setPhysics(physics => {
-            return updatePhysics(physics,currentRenderState,dt);
-        })
+        if (dt !== 0 && !shouldResetPhysics)
+            setPhysics(physics => {
+                return updatePhysics(physics, currentRenderState, dt);
+            })
     }
     useEffect(()=> {
         work(timestamp);
-    },[timestamp,runPhysics]);
+    },[control,timestamp,runPhysics]);
     return <div className="miku">
         {/*<div className="debug">{JSON.stringify(control)}</div>*/}
         <Part renderState={renderState}></Part>

@@ -28,15 +28,6 @@ let fpsArr=[];
 
 const formatTime=(millis)=>Math.floor(millis/1000/60)+':'+('00'+Math.floor(millis/1000%60)).slice(-2);
 
-const getSelection=(record)=>{
-    for (let l of record)
-        for (let c of l){
-            if(c.selected)return record;
-        }
-    return undefined;
-
-}
-
 function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,setLayer}){
     const [scale,setScale]=useState(50);
     const [centerOffset,setCenterOffset]=useState(30000);
@@ -112,15 +103,21 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                 // onMouseMove={e=>{e.buttons&&handleTimelineMouse(e)}}
                 onWheel={e=>{setCenterOffset(x=>Math.max(x+e.deltaY*scale/100,scale*50))}}
                 onMouseMove={e=>{
-                    if(e.buttons){
+                    if(e.buttons&&selectionDragging.current){
                         const {x,width}=timelineRef.current.getBoundingClientRect();
                         const {clientX}=e;
                         const newTS=(Math.max(l2t(100*(clientX-x)/width),0));
                         setRecord(record=> {
-                                for (let l of record)
+                                for (let l of record) {
+                                    let shouldSort=false;
                                     for (let c of l) {
-                                        if (c.selected) c.t = newTS;
+                                        if (c.selected) {
+                                            shouldSort=true;
+                                            c.t = newTS;
+                                        }
                                     }
+                                    if(shouldSort)l=l.sort((a,b)=>a.t-b.t);
+                                }
                                 return [...record];
                             }
                         )
@@ -143,7 +140,6 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                                         if(c.selected)delete c.selected;
                                     r.selected=true;
                                     setRecord([...record]);
-                                    setEditorTimestamp(r.t);
                                     selectionDragging.current=true;
                                     // e.stopPropagation();
                                 }}
@@ -153,8 +149,10 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                                         if(c.selected)delete c.selected;
                                     r.selected=true;
                                     setRecord([...record]);
-                                    setEditorTimestamp(r.t);
                                     selectionDragging.current=false;
+                                }}
+                                onClick={()=>{
+                                    setEditorTimestamp(r.t);
                                 }}
                             />
                             :null):null}
@@ -246,7 +244,7 @@ function App() {
         }
 
         setPlayType(v || 0);
-        playTypeChangeTime.current=(performance.now());
+        playTypeChangeTime.current=performance.now();
     }
 
     useEffect(() => {
@@ -288,6 +286,9 @@ function App() {
                                 }
                             return [...record];
                         })
+                        break;
+                    case 'Delete':
+                        setRecord(record=>record.map(l=>l.filter(o=>!o.selected)));
                         break;
                 }
             }
@@ -439,6 +440,25 @@ function App() {
             //setControl(getControl(mouseX,mouseY));
             latestMousePos.current = [mouseX, mouseY];
         }
+        if(playType===2&&e.buttons){
+            const stageRect = stageRef.current?.getBoundingClientRect();
+            if (!stageRect) return;
+            const mouseX = e.clientX - Math.floor(stageRect.x);
+            const mouseY = e.clientY - Math.floor(stageRect.y);
+            //setControl(getControl(mouseX,mouseY));
+            latestMousePos.current = [mouseX, mouseY];
+            setRecord(record=>{
+                for (let l of record) {
+                    for (let c of l) {
+                        if (c.selected) {
+                            c.c.mouseX=mouseX;
+                            c.c.mouseY=mouseY;
+                        }
+                    }
+                }
+                return [...record];
+            })
+        }
     },[playType])
 
 
@@ -452,6 +472,9 @@ function App() {
                 onMouseDown={()=>{latestMouseDown.current=true}}
                 onMouseUp={()=>{latestMouseDown.current=false}}
                 onMouseLeave={()=>{latestMouseDown.current=false}}
+                onTouchStart={()=>{latestMouseDown.current=true}}
+                onTouchEnd={()=>{latestMouseDown.current=false}}
+                onTouchCancel={()=>{latestMouseDown.current=false}}
                 onTouchMove={(e) => {
                     handleMouseMove(e.touches?.[0]);
                 }}
