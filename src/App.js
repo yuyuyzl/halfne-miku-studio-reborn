@@ -495,7 +495,7 @@ function App() {
                 }}
             >
                 <Miku control={control} timestamp={timestamp} model={config.model} runPhysics={runPhysics} key={mikuResetter}></Miku>
-                {<div className={'mouse'} style={{left: control.mouseX + 'px', top: control.mouseY + 'px'}}/>}
+                {playType!==1&&<div className={'mouse'} style={{left: control.mouseX + 'px', top: control.mouseY + 'px'}}/>}
             </div>
 
         {playType!==2?<div className='fps'>
