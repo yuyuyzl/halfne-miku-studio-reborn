@@ -112,7 +112,6 @@ body{
     }
     &-content{
       position: relative;
-      overflow: hidden;
       display: flex;
       flex-direction: column-reverse;
       &-layer{
@@ -122,16 +121,33 @@ body{
         &-control{
           position: absolute;
           box-sizing: border-box;
-          height: 8px;
-          width: 3px;
+          height: 22px;
+          min-width: 3px;
           transform: translateX(-1px);
-          background: #666;
-          top: 8px;
-          cursor: ew-resize;
+          background: #eee;
+          top: 1px;
+          display: flex;
+          flex-direction: row;
+          justify-content: flex-start;
+          align-items: center;
+          font-size: 12px;
+          color: #666;
+          overflow: hidden;
           &-selected{
             outline: 2px solid #ff5c5c;
-            background: #FFF;
+            background: #FFF!important;
             z-index: 1;
+          }
+          &-dragger{
+            cursor: ew-resize;
+            background: #666;
+            width: 3px;
+            height: 22px;
+            flex-shrink: 0;
+          }
+          &-icon{
+            color: inherit!important;
+            font-size: inherit!important;
           }
         }
         &-block{
@@ -139,7 +155,7 @@ body{
           position: absolute;
           height: 24px;
           border: 1px solid #888;
-          background: #ccc;
+          background: #eee;
           border-radius: 3px;
         }
       }

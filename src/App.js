@@ -15,6 +15,8 @@ import Save from "@mui/icons-material/Save";
 import Lock from "@mui/icons-material/Lock";
 import MusicNote from "@mui/icons-material/MusicNote";
 import FirstPage from "@mui/icons-material/FirstPage";
+import Mouse from "@mui/icons-material/MouseOutlined";
+import Key from "@mui/icons-material/KeyboardOutlined";
 import FileSaver from 'file-saver';
 
 import defaultConfig from './defaultModel'
@@ -29,7 +31,7 @@ let fpsArr=[];
 const formatTime=(millis)=>Math.floor(millis/1000/60)+':'+('00'+Math.floor(millis/1000%60)).slice(-2);
 
 function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,setLayer}){
-    const [scale,setScale]=useState(50);
+    const [scale,setScale]=useState(600);
     const [centerOffset,setCenterOffset]=useState(30000);
     const timelineRef=useRef();
     const selectionDragging=useRef(false);
@@ -46,7 +48,7 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
         if((editorTimestamp-centerOffset)/scale+50>100){
             setCenterOffset(editorTimestamp+scale*40)
         }
-    },[editorTimestamp])
+    },[editorTimestamp,scale])
     useEffect(()=>{
         if((-centerOffset)/scale+50>0){
             setCenterOffset(scale*50);
@@ -123,16 +125,23 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                         )
                     }
                 }}
+                onMouseUp={e=>{
+                    selectionDragging.current=false;
+                }}
             >
                 {record.map((o,i)=>
                     <div className='timeline-R-content-layer'>
-                        {o.length?<div className='timeline-R-content-layer-block'
+                        {(scale>=100&&o.length)?<div className='timeline-R-content-layer-block'
                               style={{left: t2l(o[0].t) + '%', right: 'calc( '+(100 - t2l(o[o.length - 1].t)) + '% - 1px '}}>
                         </div>:null}
-                        {scale<100?o.map((r)=>(t2l(r.t)>=0&&t2l(r.t)<100)?
+                        {scale<100?o.map((r,i)=>(t2l(r.t)>=0&&t2l(r.t)<100)?
                             <div
                                 className={'timeline-R-content-layer-control'+(r.selected?' timeline-R-content-layer-control-selected':'')}
-                                style={{left: t2l(r.t) + '%'}}
+                                style={{
+                                    left: t2l(r.t) + '%',
+                                    right: (o?.[i+1]?.t&&(r.c?.mouseX||r.c?.keyInput))?'calc( '+(100 - t2l(o?.[i+1]?.t)) + '% '+(r.selected?' + 2px':''):undefined,
+                                    background:r.c.mouseX?'#efe':r.c.keyInput?'#eef':undefined,
+                                }}
                                 title={JSON.stringify(r.c)}
                                 onMouseDown={(e)=>{
                                     for (let l of record)
@@ -140,21 +149,23 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                                         if(c.selected)delete c.selected;
                                     r.selected=true;
                                     setRecord([...record]);
-                                    selectionDragging.current=true;
+                                    // selectionDragging.current=true;
                                     // e.stopPropagation();
-                                }}
-                                onMouseUp={()=>{
-                                    for (let l of record)
-                                    for (let c of l)
-                                        if(c.selected)delete c.selected;
-                                    r.selected=true;
-                                    setRecord([...record]);
-                                    selectionDragging.current=false;
                                 }}
                                 onClick={()=>{
                                     setEditorTimestamp(r.t);
                                 }}
-                            />
+                            >
+                                <div
+                                    className='timeline-R-content-layer-control-dragger'
+                                    onMouseDown={(e) => {
+                                        selectionDragging.current = true;
+                                        // e.stopPropagation();
+                                    }}
+                                />
+                                {r.c.mouseX!==undefined?<Mouse className='timeline-R-content-layer-control-icon'/>:null}
+                                {r.c.keyInput!==undefined?r.c.keyInput.map(s=><div className='timeline-R-content-layer-control-key'>&nbsp;{s.replace(/[a-z ]/g,'')}</div>):null}
+                            </div>
                             :null):null}
                     </div>
                 )}
@@ -302,6 +313,25 @@ function App() {
                             return [...record];
                         })
                         break;
+                    case '=':
+                        setRecord(record=> {
+                                if(layer===undefined)record.push([{t:editorTimestamp,c:{}}]);
+                                else {
+                                    if(record[layer].filter(o=>o.t===editorTimestamp).length===0) {
+                                        record[layer].push({t: editorTimestamp, c: {}});
+                                        record[layer] = record[layer].sort((a, b) => a.t - b.t);
+                                    }
+                                }
+                                return [...record];
+                            }
+                        )
+                        break;
+                    case 'ArrowLeft':
+                        setEditorTimestamp(x=>Math.max(x-100,0));
+                        break;
+                    case 'ArrowRight':
+                        setEditorTimestamp(x=>Math.max(x+100,0));
+                        break;
                 }
             }
             e.preventDefault();
@@ -350,7 +380,7 @@ function App() {
                     const distance = Math.sqrt((easeX - control.mouseX) * (easeX - control.mouseX) + (easeY - control.mouseY) * (easeY - control.mouseY))
                     const rawControl = (distance < 1) ?
                         {mouseX: x, mouseY: y, keyInput: keyInput} :
-                        {mouseX: easeX, mouseY: easeY, keyInput: keyInput};
+                        {mouseX: easeX.toFixed(1), mouseY: easeY.toFixed(1), keyInput: keyInput};
                     return config.parseControl({...control, ...rawControl , timestamp});
                 })
                 setTimestamp(timestamp);
@@ -494,7 +524,7 @@ function App() {
                     handleMouseMove(e.touches?.[0]);
                 }}
             >
-                <Miku control={control} timestamp={timestamp} model={config.model} runPhysics={runPhysics} key={mikuResetter}></Miku>
+                <Miku control={control} timestamp={timestamp} model={config.model} runPhysics={runPhysics} key={mikuResetter}/>
                 {playType!==1&&<div className={'mouse'} style={{left: control.mouseX + 'px', top: control.mouseY + 'px'}}/>}
             </div>
 
