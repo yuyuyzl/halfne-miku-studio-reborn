@@ -477,6 +477,22 @@ function App() {
     },[playType,editorTimestamp,record])
 
     const handleMouseMove = useCallback((e) => {
+        if(e===undefined){
+            if(playType===2){
+                setRecord(record=>{
+                    for (let l of record) {
+                        for (let c of l) {
+                            if (c.selected) {
+                                delete c.c.mouseX;
+                                delete c.c.mouseY;
+                            }
+                        }
+                    }
+                    return [...record];
+                })
+            }
+            return;
+        }
         if(playType===0||playType===-1) {
             const stageRect = stageRef.current?.getBoundingClientRect();
             if (!stageRect) return;
@@ -516,7 +532,7 @@ function App() {
                 onMouseMove={handleMouseMove}
                 onMouseDown={()=>{latestMouseDown.current=true}}
                 onMouseUp={()=>{latestMouseDown.current=false}}
-                onMouseLeave={()=>{latestMouseDown.current=false}}
+                onMouseLeave={()=>{latestMouseDown.current&&handleMouseMove();latestMouseDown.current=false}}
                 onTouchStart={()=>{latestMouseDown.current=true}}
                 onTouchEnd={()=>{latestMouseDown.current=false}}
                 onTouchCancel={()=>{latestMouseDown.current=false}}
