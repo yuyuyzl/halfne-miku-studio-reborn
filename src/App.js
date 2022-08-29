@@ -13,10 +13,15 @@ import Refresh from "@mui/icons-material/Refresh";
 import FileOpen from "@mui/icons-material/FileOpen";
 import Save from "@mui/icons-material/Save";
 import Lock from "@mui/icons-material/Lock";
+import LockOpen from "@mui/icons-material/LockOpen";
 import MusicNote from "@mui/icons-material/MusicNote";
 import FirstPage from "@mui/icons-material/FirstPage";
 import Mouse from "@mui/icons-material/MouseOutlined";
-import Key from "@mui/icons-material/KeyboardOutlined";
+import ArrowDownward from "@mui/icons-material/ArrowDownward";
+import ArrowUpward from "@mui/icons-material/ArrowUpward";
+import Close from "@mui/icons-material/Close";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import FileSaver from 'file-saver';
 
 import defaultConfig from './defaultModel'
@@ -71,14 +76,22 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
             </div>
             <div className='timeline-L-layer'>
 
-                {record.map((o,i)=>
-                    <div
-                        className={'timeline-L-layer-item '+(i===layer?'timeline-L-layer-item-selected':"")}
-                        onClick={()=>setLayer(i)}
+                {record.map((o,i)=> {
+                    const {locked=false,visible=true,name=`Layer ${i}`}=o;
+                    return <div
+                        className={'timeline-L-layer-item ' + (i === layer ? 'timeline-L-layer-item-selected' : "")}
+                        onClick={() => setLayer(i)}
                     >
-                        Layer {i}
+                        {name}
+                        <div className='timeline-L-layer-item-options'>
+                            {i !== record.length - 1 ? <ArrowUpward fontSize={'inherit'}/> : null}
+                            {i !== 0 ? <ArrowDownward fontSize={'inherit'}/> : null}
+                            {visible?<Visibility fontSize={'inherit'}/>:<VisibilityOff fontSize={'inherit'}/>}
+                            <Close fontSize={'inherit'}/>
+                            {locked?<Lock fontSize={'inherit'}/>:<LockOpen fontSize={'inherit'}/>}
+                        </div>
                     </div>
-                )}
+                })}
 
                 <div
                     className={'timeline-L-layer-item '+(undefined===layer?'timeline-L-layer-item-selected':"")}
@@ -112,13 +125,13 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                         setRecord(record=> {
                                 for (let l of record) {
                                     let shouldSort=false;
-                                    for (let c of l) {
+                                    for (let c of l.a) {
                                         if (c.selected) {
                                             shouldSort=true;
                                             c.t = newTS;
                                         }
                                     }
-                                    if(shouldSort)l=l.sort((a,b)=>a.t-b.t);
+                                    if(shouldSort)l=l.a.sort((a,b)=>a.t-b.t);
                                 }
                                 return [...record];
                             }
@@ -129,7 +142,7 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                     selectionDragging.current=false;
                 }}
             >
-                {record.map((o,i)=>
+                {record.map(({a:o=[]},i)=>
                     <div className='timeline-R-content-layer'>
                         {(scale>=100&&o.length)?<div className='timeline-R-content-layer-block'
                               style={{left: t2l(o[0].t) + '%', right: 'calc( '+(100 - t2l(o[o.length - 1].t)) + '% - 1px '}}>
@@ -145,7 +158,7 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                                 title={JSON.stringify(r.c)}
                                 onMouseDown={(e)=>{
                                     for (let l of record)
-                                    for (let c of l)
+                                    for (let c of l.a)
                                         if(c.selected)delete c.selected;
                                     r.selected=true;
                                     setRecord([...record]);
@@ -219,7 +232,7 @@ function App() {
             // setCurrentFrame(undefined);
             if(layer===undefined)setLayer(record.length)
             else setRecord(record=>{
-                record[layer]=[]
+                record[layer]= {a:[]}
                 return record;
             })
         }
@@ -238,18 +251,18 @@ function App() {
 
         if(playType===-1){
             setRecord(record=>{
-                record[layer].forEach((o,i)=>{
-                    if(i===record[layer].length-1||i===0)return;
+                record[layer].a.forEach((o,i)=>{
+                    if(i===record[layer].a.length-1||i===0)return;
                     // debugger;
                     if(
-                        (record[layer][i-1].c.mouseX===record[layer][i].c.mouseX)&&
-                        (record[layer][i+1].c.mouseX===record[layer][i].c.mouseX)&&
-                        (record[layer][i-1].c.mouseY===record[layer][i].c.mouseY)&&
-                        (record[layer][i+1].c.mouseY===record[layer][i].c.mouseY)&&
-                        (record[layer][i-1].c.keyInput?.join('||')===record[layer][i].c.keyInput?.join('||'))
-                    )record[layer][i].del=true;
+                        (record[layer].a[i-1].c.mouseX===record[layer].a[i].c.mouseX)&&
+                        (record[layer].a[i+1].c.mouseX===record[layer].a[i].c.mouseX)&&
+                        (record[layer].a[i-1].c.mouseY===record[layer].a[i].c.mouseY)&&
+                        (record[layer].a[i+1].c.mouseY===record[layer].a[i].c.mouseY)&&
+                        (record[layer].a[i-1].c.keyInput?.join('||')===record[layer].a[i].c.keyInput?.join('||'))
+                    )record[layer].a[i].del=true;
                 })
-                record[layer]=record[layer].filter(o=>!o.del);
+                record[layer].a=record[layer].a.filter(o=>!o.del);
                 return record;
             })
         }
@@ -292,19 +305,20 @@ function App() {
                     case 'Escape':
                         setRecord(record=>{
                             for (let l of record)
-                                for (let c of l){
+                                for (let c of l.a){
                                     if(c.selected)delete c.selected
                                 }
                             return [...record];
                         })
                         break;
                     case 'Delete':
-                        setRecord(record=>record.map(l=>l.filter(o=>!o.selected)));
+                    case 'Backspace':
+                        setRecord(record=>record.map(l=>({...l,a:l.a.filter(o => !o.selected)})));
                         break;
                     case 'Enter':
                         setRecord(record=>{
                             for (let l of record) {
-                                for (let c of l) {
+                                for (let c of l.a) {
                                     if (c.selected) {
                                         c.c.keyInput=parseKeyMapping(window.keyList,keyMapping);
                                     }
@@ -315,11 +329,11 @@ function App() {
                         break;
                     case '=':
                         setRecord(record=> {
-                                if(layer===undefined)record.push([{t:editorTimestamp,c:{}}]);
+                                if(layer===undefined)record.push({a:[{t: editorTimestamp, c: {}}]});
                                 else {
-                                    if(record[layer].filter(o=>o.t===editorTimestamp).length===0) {
-                                        record[layer].push({t: editorTimestamp, c: {}});
-                                        record[layer] = record[layer].sort((a, b) => a.t - b.t);
+                                    if(record[layer].a.filter(o=>o.t===editorTimestamp).length===0) {
+                                        record[layer].a.push({t: editorTimestamp, c: {}});
+                                        record[layer].a = record[layer].a.sort((a, b) => a.t - b.t);
                                     }
                                 }
                                 return [...record];
@@ -422,9 +436,9 @@ function App() {
             const {mouseX,mouseY,timestamp,keyInput}=control;
             // debugger;
             setRecord(record => {
-                    if(!record[layer])record[layer]=[];
-                    record[layer].push({
-                        t: record[layer].length===0?editorTimestampOnPlay.current:timestamp - playTypeChangeTime.current+editorTimestampOnPlay.current,
+                    if(!record[layer])record[layer]={a:[]};
+                    record[layer].a.push({
+                        t: record[layer].a.length===0?editorTimestampOnPlay.current:timestamp - playTypeChangeTime.current+editorTimestampOnPlay.current,
                         c: {mouseX:latestMouseDown.current?mouseX:undefined,mouseY:latestMouseDown.current?mouseY:undefined,keyInput:keyInput?.length?keyInput:undefined},
                     });
                     return record;
@@ -439,7 +453,8 @@ function App() {
             const targetTime=editorTimestamp;
             setControl(control => {
                 // console.log(timestamp-playTypeChangeTime);
-                const layerControls=record.map(layerData=>{
+                const layerControls=record.map(layer=>{
+                    const layerData=layer.a;
                     const rawControlIndex=layerData?.reduce?.((p,c,i)=>c.t<=targetTime?i:p,undefined);
                     if(rawControlIndex===undefined)return {};
                     const rawControl={...layerData[rawControlIndex]?.c};
@@ -481,7 +496,7 @@ function App() {
             if(playType===2){
                 setRecord(record=>{
                     for (let l of record) {
-                        for (let c of l) {
+                        for (let c of l.a) {
                             if (c.selected) {
                                 delete c.c.mouseX;
                                 delete c.c.mouseY;
@@ -510,7 +525,7 @@ function App() {
             latestMousePos.current = [mouseX, mouseY];
             setRecord(record=>{
                 for (let l of record) {
-                    for (let c of l) {
+                    for (let c of l.a) {
                         if (c.selected) {
                             c.c.mouseX=mouseX;
                             c.c.mouseY=mouseY;
@@ -612,7 +627,11 @@ function App() {
                                 input.type='file';
                                 input.onchange=(e)=>{
                                     const fr=new FileReader();
-                                    fr.onload=()=>setRecord(JSON.parse(fr.result));
+                                    fr.onload=()=> {
+                                        let _record=JSON.parse(fr.result);
+                                        _record=_record.map(o=>Array.isArray(o)?{a:o}:o);
+                                        setRecord(_record);
+                                    };
                                     fr.readAsText(e.target.files[0])
                                 };
                                 input.click();
