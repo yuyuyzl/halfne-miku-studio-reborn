@@ -77,18 +77,43 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
             <div className='timeline-L-layer'>
 
                 {record.map((o,i)=> {
-                    const {locked=false,visible=true,name=`Layer ${i}`}=o;
+                    const {l = false, v = true, n = `Layer ${i}`} = o;
                     return <div
                         className={'timeline-L-layer-item ' + (i === layer ? 'timeline-L-layer-item-selected' : "")}
                         onClick={() => setLayer(i)}
                     >
-                        {name}
+                        <span onDoubleClick={()=>{
+                            setRecord(record => {
+                                record[i].n = prompt('Layer name:',n)||n;
+                                return [...record]
+                            })
+                        }}>{n}</span>
                         <div className='timeline-L-layer-item-options'>
-                            {i !== record.length - 1 ? <ArrowUpward fontSize={'inherit'}/> : null}
-                            {i !== 0 ? <ArrowDownward fontSize={'inherit'}/> : null}
-                            {visible?<Visibility fontSize={'inherit'}/>:<VisibilityOff fontSize={'inherit'}/>}
-                            <Close fontSize={'inherit'}/>
-                            {locked?<Lock fontSize={'inherit'}/>:<LockOpen fontSize={'inherit'}/>}
+                            {l ? null : <>
+                                {i !== record.length - 1 ? <ArrowUpward onClick={() => setRecord(record => {
+                                    [record[i],record[i+1]]=[record[i+1],record[i]]
+                                    return [...record]
+                                })} fontSize={'inherit'}/> : null}
+                                {i !== 0 ? <ArrowDownward onClick={() => setRecord(record => {
+                                    [record[i],record[i-1]]=[record[i-1],record[i]]
+                                    return [...record]
+                                })} fontSize={'inherit'}/> : null}
+                                {v ? <Visibility onClick={() => setRecord(record => {
+                                    record[i].v = false;
+                                    return [...record]
+                                })} fontSize={'inherit'}/> : <VisibilityOff onClick={() => setRecord(record => {
+                                    record[i].v = true;
+                                    return [...record]
+                                })} fontSize={'inherit'}/>}
+                                <Close onClick={e=>{setRecord(record=>record.filter((o,ii)=>ii!==i));setLayer(undefined);e.stopPropagation();}} fontSize={'inherit'}/>
+                            </>}
+                            {l ? <Lock onClick={() => setRecord(record => {
+                                record[i].l = false;
+                                return [...record]
+                            })} fontSize={'inherit'}/> : <LockOpen onClick={() => setRecord(record => {
+                                record[i].l = true;
+                                return [...record]
+                            })} fontSize={'inherit'}/>}
                         </div>
                     </div>
                 })}
@@ -142,7 +167,7 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                     selectionDragging.current=false;
                 }}
             >
-                {record.map(({a:o=[]},i)=>
+                {record.map(({a:o=[],l=false},i)=>
                     <div className='timeline-R-content-layer'>
                         {(scale>=100&&o.length)?<div className='timeline-R-content-layer-block'
                               style={{left: t2l(o[0].t) + '%', right: 'calc( '+(100 - t2l(o[o.length - 1].t)) + '% - 1px '}}>
@@ -160,7 +185,7 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                                     for (let l of record)
                                     for (let c of l.a)
                                         if(c.selected)delete c.selected;
-                                    r.selected=true;
+                                    if(!l)r.selected=true;
                                     setRecord([...record]);
                                     // selectionDragging.current=true;
                                     // e.stopPropagation();
@@ -172,7 +197,7 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                                 <div
                                     className='timeline-R-content-layer-control-dragger'
                                     onMouseDown={(e) => {
-                                        selectionDragging.current = true;
+                                        if(!l)selectionDragging.current = true;
                                         // e.stopPropagation();
                                     }}
                                 />
@@ -329,7 +354,10 @@ function App() {
                         break;
                     case '=':
                         setRecord(record=> {
-                                if(layer===undefined)record.push({a:[{t: editorTimestamp, c: {}}]});
+                                if(layer===undefined) {
+                                    record.push({a: [{t: editorTimestamp, c: {}}]});
+                                    setLayer(record.length-1);
+                                }
                                 else {
                                     if(record[layer].a.filter(o=>o.t===editorTimestamp).length===0) {
                                         record[layer].a.push({t: editorTimestamp, c: {}});
@@ -454,6 +482,7 @@ function App() {
             setControl(control => {
                 // console.log(timestamp-playTypeChangeTime);
                 const layerControls=record.map(layer=>{
+                    if (layer.v===false)return {};
                     const layerData=layer.a;
                     const rawControlIndex=layerData?.reduce?.((p,c,i)=>c.t<=targetTime?i:p,undefined);
                     if(rawControlIndex===undefined)return {};
@@ -579,7 +608,7 @@ function App() {
                         exclusive
                         onChange={(e, v) =>togglePlayType(v)}
                     >
-                        <ToggleButton value={-1}>
+                        <ToggleButton value={-1} disabled={record[layer]?.l}>
                             <FiberManualRecord/>
                         </ToggleButton>
                         <ToggleButton value={1} disabled={record?.length===0}>
