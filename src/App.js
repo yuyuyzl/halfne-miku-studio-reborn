@@ -25,6 +25,7 @@ import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import FileSaver from 'file-saver';
 
 import defaultConfig from './defaultModel'
+import {parseModelJS} from "./Engine/modelUtils";
 
 const W = 800;
 const H = 600;
@@ -236,7 +237,7 @@ function App() {
     // const [currentFrame,setCurrentFrame]=useState();
     const [record,setRecord]=useState([]);
     const [mikuResetter,setMikuResetter]=useState(0);
-    const [stageBackground,setStageBackground]=useState(Object?.entries?.(config.background)?.[0]?.[1]||'#FFFFFF');
+    const [stageBackground,setStageBackground]=useState((config.background&&Object?.entries?.(config.background)?.[0]?.[1])||'#FFFFFF');
     const [layer,setLayer]=useState();
     const [editorTimestamp,setEditorTimestamp]=useState(0);
     const [runPhysics,setRunPhysics]=useState(true);
@@ -672,6 +673,8 @@ function App() {
                             FileSaver.saveAs(blob, "HMSR.json");
                         }} disabled={record?.length===0}><Save/></ToggleButton>
                     </ToggleButtonGroup>
+
+
                     {audioFile?<audio src={audioFile} ref={audioRef}/>:null}
                     {/*<div className='timedisplay'>/</div>*/}
                     {/*<div className='timedisplay'>*/}
@@ -715,7 +718,28 @@ function App() {
                             )
                             :null}
                     </ToggleButtonGroup>
-                </div>}{tabPage === 3 && <div className='controls-panel'>
+                </div>}{tabPage === 3 && <div className='controls-panel controls-panel-control'>
+                <ToggleButtonGroup>
+                    <ToggleButton value={1} onClick={()=>{
+                        try {
+                            const input=document.createElement('input');
+                            input.type='file';
+                            input.onchange=(e)=>{
+                                const fr=new FileReader();
+                                fr.onload=()=> {
+                                    let newConfig=parseModelJS(fr.result);
+                                    console.log(newConfig);
+                                    setConfig(newConfig);
+                                    setMikuResetter(o=>o+1);
+                                };
+                                fr.readAsText(e.target.files[0])
+                            };
+                            input.click();
+                        }catch {}
+                    }}><FileOpen/></ToggleButton>
+                </ToggleButtonGroup>
+
+                &nbsp;
                     <ToggleButtonGroup
                         value={fpsTarget}
                         exclusive
