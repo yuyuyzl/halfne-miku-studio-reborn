@@ -353,20 +353,21 @@ function App() {
                         })
                         break;
                     case '=':
-                        setRecord(record=> {
-                                if(layer===undefined) {
-                                    record.push({a: [{t: editorTimestamp, c: {}}]});
-                                    setLayer(record.length-1);
-                                }
-                                else {
-                                    if(record[layer].a.filter(o=>o.t===editorTimestamp).length===0) {
-                                        record[layer].a.push({t: editorTimestamp, c: {}});
-                                        record[layer].a = record[layer].a.sort((a, b) => a.t - b.t);
+                        if(!record[layer].l)
+                            setRecord(record=> {
+                                    if(layer===undefined) {
+                                        record.push({a: [{t: editorTimestamp, c: {}}]});
+                                        setLayer(record.length-1);
                                     }
+                                    else {
+                                        if(record[layer].a.filter(o=>o.t===editorTimestamp).length===0) {
+                                            record[layer].a.push({t: editorTimestamp, c: {}});
+                                            record[layer].a = record[layer].a.sort((a, b) => a.t - b.t);
+                                        }
+                                    }
+                                    return [...record];
                                 }
-                                return [...record];
-                            }
-                        )
+                            )
                         break;
                     case 'ArrowLeft':
                         setEditorTimestamp(x=>Math.max(x-100,0));
