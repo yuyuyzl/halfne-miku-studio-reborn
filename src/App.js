@@ -22,10 +22,12 @@ import ArrowUpward from "@mui/icons-material/ArrowUpward";
 import Close from "@mui/icons-material/Close";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import Camera from "@mui/icons-material/Camera";
 import FileSaver from 'file-saver';
 
 import defaultConfig from './defaultModel'
 import {parseModelJS} from "./Engine/modelUtils";
+import html2canvas from "html2canvas";
 
 const W = 800;
 const H = 600;
@@ -299,7 +301,7 @@ function App() {
 
     useEffect(() => {
         let frametime=0;
-        const _waitUntilNextFrame = fpsTarget ? (f => setTimeout(f, 1000 / fpsTarget-frametime)) : requestAnimationFrame
+        const _waitUntilNextFrame = fpsTarget ? (f => setTimeout(f, fpsTarget===Infinity?(1000 / fpsTarget-frametime):0)) : requestAnimationFrame
         waitUntilNextFrame=cb=>{
             _waitUntilNextFrame((...args)=>{
                 const tic= performance.now();
@@ -354,7 +356,7 @@ function App() {
                         })
                         break;
                     case '=':
-                        if(!record[layer].l)
+                        if(!record?.[layer]?.l)
                             setRecord(record=> {
                                     if(layer===undefined) {
                                         record.push({a: [{t: editorTimestamp, c: {}}]});
@@ -586,8 +588,9 @@ function App() {
                     handleMouseMove(e.touches?.[0]);
                 }}
             >
+                {stageBackground===undefined?<div className='stage-transparent' data-html2canvas-ignore={true}/>:null}
                 <Miku control={control} timestamp={timestamp} model={config.model} runPhysics={runPhysics} key={mikuResetter}/>
-                {playType!==1&&<div className={'mouse'} style={{left: control.mouseX + 'px', top: control.mouseY + 'px'}}/>}
+                {playType!==1&&<div className={'mouse'} data-html2canvas-ignore={true} style={{left: control.mouseX + 'px', top: control.mouseY + 'px'}}/>}
             </div>
 
         {playType!==2?<div className='fps'>
@@ -600,6 +603,7 @@ function App() {
                         <Tab label="Control"/>
                         <Tab label="Info"/>
                         <Tab label="Background"/>
+                        <Tab label="Render"/>
                         <Tab label="Settings"/>
                     </Tabs>
                 </Box>
@@ -690,9 +694,12 @@ function App() {
                     <ToggleButtonGroup
                         value={stageBackground}
                         exclusive
-                        onChange={(e, v) => setStageBackground(v || '#FFFFFF')}
+                        onChange={(e, v) => setStageBackground(v)}
                         label="Background"
                     >
+                        <ToggleButton value={undefined} aria-label="Transparent">
+                            Transparent
+                        </ToggleButton>
                         <ToggleButton value={'#FFFFFF'} aria-label="White">
                             White
                         </ToggleButton>
@@ -718,7 +725,17 @@ function App() {
                             )
                             :null}
                     </ToggleButtonGroup>
-                </div>}{tabPage === 3 && <div className='controls-panel controls-panel-control'>
+                </div>}
+                {tabPage === 3 && <div className='controls-panel controls-panel-control'>
+                    <ToggleButtonGroup>
+                        <ToggleButton value={1} onClick={()=>{
+                            html2canvas(stageRef.current,{backgroundColor:null}).then(function(canvas) {
+                                canvas.toBlob(o=>FileSaver.saveAs(o,'HMSR-Render.png'));
+                            });
+                        }}><Camera/></ToggleButton>
+                    </ToggleButtonGroup>
+                </div>}
+                {tabPage === 4 && <div className='controls-panel controls-panel-control'>
                 <ToggleButtonGroup>
                     <ToggleButton value={1} onClick={()=>{
                         try {
@@ -747,7 +764,10 @@ function App() {
                         label="FPS Limit"
                     >
                         <ToggleButton value={0} aria-label="OFF">
-                            OFF
+                            RAF
+                        </ToggleButton>
+                        <ToggleButton value={Infinity} aria-label="OFF">
+                            Unlimited
                         </ToggleButton>
                         <ToggleButton value={30} aria-label="30 FPS">
                             30 FPS
