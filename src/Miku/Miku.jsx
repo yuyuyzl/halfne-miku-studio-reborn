@@ -17,7 +17,7 @@ export default function Miku(props){
         const shouldResetPhysics = (dt > 200 || dt < 0 || !runPhysics);
         let _physics=physics;
         if (shouldResetPhysics) {
-            _physics=getInitPhysics(parseConfig(model, control), false);
+            _physics=getInitPhysics(parseConfig(model, control), true);
             setPhysics(_physics);
         }
         let currentRenderState = parseConfig(model, control, _physics);

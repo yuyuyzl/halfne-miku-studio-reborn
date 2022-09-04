@@ -23,11 +23,13 @@ import Close from "@mui/icons-material/Close";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import Camera from "@mui/icons-material/Camera";
+import Videocam from "@mui/icons-material/Videocam";
 import FileSaver from 'file-saver';
 
 import defaultConfig from './defaultModel'
 import {parseModelJS} from "./Engine/modelUtils";
 import html2canvas from "html2canvas";
+import JSZip from "jszip";
 
 const W = 800;
 const H = 600;
@@ -37,6 +39,39 @@ let waitUntilNextFrame = requestAnimationFrame;
 let fpsArr=[];
 
 const formatTime=(millis)=>Math.floor(millis/1000/60)+':'+('00'+Math.floor(millis/1000%60)).slice(-2);
+
+const getRawControl=(record,targetTime)=>{
+    const layerControls=record.map(layer=>{
+        if (layer.v===false)return {};
+        const layerData=layer.a;
+        const rawControlIndex=layerData?.reduce?.((p,c,i)=>c.t<=targetTime?i:p,undefined);
+        if(rawControlIndex===undefined)return {};
+        const rawControl={...layerData[rawControlIndex]?.c};
+        const rawControlNext=layerData[rawControlIndex+1]?.c;
+        // console.log(rawControl);
+        if(rawControlNext&&rawControl.mouseX!==undefined&&rawControlNext.mouseX!==undefined){
+            // console.log(rawControl,rawControlNext);
+            const lt=layerData[rawControlIndex]?.t;
+            const rt=layerData[rawControlIndex+1]?.t;
+            const kl=(rt-targetTime)/(rt-lt);
+            const kr=(targetTime-lt)/(rt-lt);
+            rawControl.mouseX=rawControl?.mouseX*kl+rawControlNext?.mouseX*kr;
+            rawControl.mouseY=rawControl?.mouseY*kl+rawControlNext?.mouseY*kr;
+        }
+        if(rawControl?.mouseX===undefined){
+            delete rawControl.mouseX;
+            delete rawControl.mouseY;
+        }
+        return rawControl;
+    })
+    // debugger;
+    const newControl=layerControls.reduce((p,c)=>({...p,...c,keyInput:[...(p.keyInput||[]),...(c.keyInput||[])]}),{})
+    if(newControl?.mouseX===undefined){
+        delete newControl.mouseX;
+        delete newControl.mouseY;
+    }
+    return newControl;
+}
 
 function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,setLayer}){
     const [scale,setScale]=useState(600);
@@ -221,6 +256,7 @@ function App() {
     const latestMousePos = useRef([W/2, H/2]);
     const latestMouseDown = useRef(false);
     const audioRef = useRef();
+    const renderOutput=useRef();
     const editorTimestampOnPlay = useRef(0);
     const [timestamp, setTimestamp] = useState(performance.now());
 
@@ -230,6 +266,7 @@ function App() {
     const [keyMapping, setKeyMapping] = useState(config.defaultKeyMapping);
 
     const [fpsTarget, setFpsTarget] = useState(0);
+    const [renderFps, setRenderFps] = useState(60);
     const [fps,setFps]=useState(0);
 
     const [tabPage, setTabPage] = useState(0);
@@ -245,6 +282,10 @@ function App() {
     const [runPhysics,setRunPhysics]=useState(true);
     const [audioFile,setAudioFile]=useState();
 
+    const [renderStart,setRenderStart]=useState(0);
+    const [renderEnd,setRenderEnd]=useState(1000);
+
+
     const resetMiku=(rawControl={mouseX:W/2,mouseY:H/2,keyInput:[]})=>{
         latestMousePos.current=[rawControl.mouseX,rawControl.mouseY];
         setControl(config.parseControl(rawControl));
@@ -254,8 +295,8 @@ function App() {
     const parseKeyMapping = (keyList, keyMapping) => keyList.map(o => keyMapping.filter(([k, v]) => v === o).map(([k, v]) => k))
         .reduce((p, c) => [...p, ...c], []);
 
-    const togglePlayType=v=> {
-        editorTimestampOnPlay.current=editorTimestamp;
+    const togglePlayType=(v,fromTimestamp=editorTimestamp)=> {
+        editorTimestampOnPlay.current=fromTimestamp;
         if (v === -1) {
             // setCurrentFrame(undefined);
             if(layer===undefined)setLayer(record.length)
@@ -264,8 +305,10 @@ function App() {
                 return record;
             })
         }
-        if (v === 1) {
+        if (v === 1||v===3) {
             if (!record.length)return;
+            setEditorTimestamp(fromTimestamp);
+            resetMiku(getRawControl(record,fromTimestamp));
         }
 
         if(audioRef.current) {
@@ -407,6 +450,7 @@ function App() {
         }
     },[playType, togglePlayType])
 
+    // Main Play Control
     useEffect(() => {
         if(playType===0||playType===-1) {
             if (!window.keyList) window.keyList = []
@@ -443,17 +487,8 @@ function App() {
             const updateControl = (timestamp = performance.now()) => {
                 if (canceled) return;
                 const targetTime=timestamp-playTypeChangeTime.current+editorTimestampOnPlay.current;
-                // setControl(control => {
-                //     // console.log(timestamp-playTypeChangeTime);
-                //     const rawControlIndex=record[layer].reduce((p,c,i)=>c.t<=targetTime?i:p,undefined);
-                //     const rawControl=record[layer][rawControlIndex]?.c;
-                //     // console.log(rawControl);
-                //     latestMousePos.current=[rawControl?.mouseX,rawControl?.mouseY];
-                //     // setCurrentFrame(rawControlIndex);
-                //     return config.parseControl({...control, ...rawControl});
-                // })
                 setEditorTimestamp(targetTime);
-                setTimestamp(timestamp);
+                setTimestamp(targetTime);
                 waitUntilNextFrame(updateControl);
             }
             waitUntilNextFrame(updateControl);
@@ -461,8 +496,39 @@ function App() {
                 canceled = true;
             }
         }
+        if(playType===3){
+            let canceled = false;
+            console.log(record);
+            const zip=new JSZip();
+            const updateControl = (currentFrame) => {
+                if (canceled) return;
+                html2canvas(stageRef.current,{backgroundColor:null}).then(function(canvas) {
+                    canvas.toBlob(o=> {
+                        zip.file(`HMSR-Render-${('00000'+currentFrame).slice(-5)}.png`,o);
+                        // FileSaver.saveAs(o, `HMSR-Render-${('00000'+currentFrame).slice(-5)}.png`);
+                        // console.log(o);
+                        const targetTime=(currentFrame+1)*1000/renderFps+editorTimestampOnPlay.current;
+                        if(targetTime<=renderEnd) {
+                            setEditorTimestamp(targetTime);
+                            setTimestamp(targetTime);
+                            setTimeout(() => updateControl(currentFrame + 1));
+                        }else {
+                            togglePlayType(2);
+                        }
+                    });
+                });
+            }
+            setTimeout(()=>updateControl(0));
+            return () => {
+                canceled = true;
+                zip.generateAsync({type:'blob'}).then(o=>
+                    FileSaver.saveAs(o,'HMSR-Render.zip')
+                )
+            }
+        }
     }, [playType]);
 
+    // Recording Control
     useEffect(()=>{
         if (playType === -1) {
             const {mouseX,mouseY,timestamp,keyInput}=control;
@@ -480,42 +546,14 @@ function App() {
         }
     },[control, layer, playType]);
 
+    // Editor Timestamp to Control Data
     useEffect(()=>{
-        if((playType===2||playType===0||playType===1)&&record?.length){
+        if((playType>=0)&&record?.length){
             const targetTime=editorTimestamp;
             setControl(control => {
                 // console.log(timestamp-playTypeChangeTime);
-                const layerControls=record.map(layer=>{
-                    if (layer.v===false)return {};
-                    const layerData=layer.a;
-                    const rawControlIndex=layerData?.reduce?.((p,c,i)=>c.t<=targetTime?i:p,undefined);
-                    if(rawControlIndex===undefined)return {};
-                    const rawControl={...layerData[rawControlIndex]?.c};
-                    const rawControlNext=layerData[rawControlIndex+1]?.c;
-                    // console.log(rawControl);
-                    if(rawControlNext&&rawControl.mouseX!==undefined&&rawControlNext.mouseX!==undefined){
-                        // console.log(rawControl,rawControlNext);
-                        const lt=layerData[rawControlIndex]?.t;
-                        const rt=layerData[rawControlIndex+1]?.t;
-                        const kl=(rt-targetTime)/(rt-lt);
-                        const kr=(targetTime-lt)/(rt-lt);
-                        rawControl.mouseX=rawControl?.mouseX*kl+rawControlNext?.mouseX*kr;
-                        rawControl.mouseY=rawControl?.mouseY*kl+rawControlNext?.mouseY*kr;
-                    }
-                    if(rawControl?.mouseX===undefined){
-                        delete rawControl.mouseX;
-                        delete rawControl.mouseY;
-                    }
-                    return rawControl;
-                })
-                // debugger;
-                const newControl=layerControls.reduce((p,c)=>({...p,...c,keyInput:[...(p.keyInput||[]),...(c.keyInput||[])]}),{})
-                if(newControl?.mouseX!==undefined)
-                    latestMousePos.current=[newControl?.mouseX,newControl?.mouseY];
-                else {
-                    delete newControl.mouseX;
-                    delete newControl.mouseY;
-                }
+                const newControl=getRawControl(record,targetTime);
+                if(newControl?.mouseX) latestMousePos.current=[newControl?.mouseX,newControl?.mouseY];
                 // console.log(newControl);
                 return config.parseControl({...control,...newControl});
                 // setCurrentFrame(rawControlIndex);
@@ -591,6 +629,7 @@ function App() {
                 {stageBackground===undefined?<div className='stage-transparent' data-html2canvas-ignore={true}/>:null}
                 <Miku control={control} timestamp={timestamp} model={config.model} runPhysics={runPhysics} key={mikuResetter}/>
                 {playType!==1&&<div className={'mouse'} data-html2canvas-ignore={true} style={{left: control.mouseX + 'px', top: control.mouseY + 'px'}}/>}
+                {/*{playType===3?<div className='stage-debug'>{editorTimestamp}</div>:null}*/}
             </div>
 
         {playType!==2?<div className='fps'>
@@ -734,6 +773,33 @@ function App() {
                             });
                         }}><Camera/></ToggleButton>
                     </ToggleButtonGroup>
+                    &nbsp;
+                    <ToggleButtonGroup
+                        value={playType}
+                        exclusive
+                        onChange={(e,v)=> {
+                            playType !== 3 ? togglePlayType(3, renderStart) : togglePlayType(2)
+                        }}
+                    >
+                        <ToggleButton value={3}><Videocam/></ToggleButton>
+                    </ToggleButtonGroup>
+                    &nbsp;
+                    <ToggleButtonGroup
+                        value={renderFps}
+                        exclusive
+                        onChange={(e, v) => setRenderFps(v || renderFps)}
+                        label="Render FPS"
+                    >
+                        <ToggleButton value={30} aria-label="30 FPS">
+                            30 FPS
+                        </ToggleButton>
+                        <ToggleButton value={60} aria-label="60 FPS">
+                            60 FPS
+                        </ToggleButton>
+                        <ToggleButton value={120} aria-label="120 FPS">
+                            120 FPS
+                        </ToggleButton>
+                    </ToggleButtonGroup>
                 </div>}
                 {tabPage === 4 && <div className='controls-panel controls-panel-control'>
                 <ToggleButtonGroup>
@@ -747,7 +813,7 @@ function App() {
                                     let newConfig=parseModelJS(fr.result);
                                     console.log(newConfig);
                                     setConfig(newConfig);
-                                    setMikuResetter(o=>o+1);
+                                    resetMiku();
                                 };
                                 fr.readAsText(e.target.files[0])
                             };

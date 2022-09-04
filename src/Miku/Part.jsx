@@ -6,10 +6,10 @@ export default function Part({renderState}){
         position:'absolute',
         transform:`translate(${x}px,${y}px) `+(rotation?`rotate(${rotation}deg)`:'')+(scaleY?` scaleY(${scaleY})`:'')+(scaleX?` scaleX(${scaleX})`:''),
     }}>
-        <img src={resource} style={{
-            position:'absolute',
-            transform:`translate(${-resourceCenterX}px,${-resourceCenterY}px)`,
-        }}/>
+        {resource?<img src={resource} style={{
+            position: 'absolute',
+            transform: `translate(${-resourceCenterX}px,${-resourceCenterY}px)`,
+        }}/>:null}
         {components?.map((o,i)=>
             <Part renderState={o} key={i}/>
         )}
