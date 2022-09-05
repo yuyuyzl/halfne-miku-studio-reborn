@@ -21,6 +21,8 @@ export default function Miku(props){
             setPhysics(_physics);
         }
         let currentRenderState = parseConfig(model, control, _physics);
+        console.log(model);
+        console.log(control,_physics);
         setRenderState(currentRenderState);
         if (dt !== 0 && !shouldResetPhysics)
             setPhysics(physics => {

@@ -525,6 +525,7 @@ function App() {
                             togglePlayType(2);
                         }
                     });
+
                 });
             }
             setTimeout(()=>updateControl(0));
