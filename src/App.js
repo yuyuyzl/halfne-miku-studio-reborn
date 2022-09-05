@@ -73,7 +73,7 @@ const getRawControl=(record,targetTime)=>{
     return newControl;
 }
 
-function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,setLayer}){
+function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,setLayer,renderStart,renderEnd}){
     const [scale,setScale]=useState(600);
     const [centerOffset,setCenterOffset]=useState(30000);
     const timelineRef=useRef();
@@ -174,6 +174,8 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
             >
                 {marks.map(o=><div className='timeline-R-time-mark' style={{left: t2l(o) + '%'}}/>)}
                 {marks.map(o=>o%1000===0?<div className='timeline-R-time-time' style={{left: t2l(o)+'%'}}>{formatTime(o)}</div>:null)}
+                {(t2l(renderStart)>=0&&t2l(renderStart)<100)?<div className='timeline-R-time-render-L' style={{left:t2l(renderStart)+'%'}}/>:null}
+                {(t2l(renderEnd)>=0&&t2l(renderEnd)<100)?<div className='timeline-R-time-render-R' style={{left:t2l(renderEnd)+'%'}}/>:null}
                 {(t2l(editorTimestamp)>=0&&t2l(editorTimestamp)<100)?<div className='timeline-R-time-arrow' style={{left:t2l(editorTimestamp)+'%'}}/>:null}
             </div>
             <div
@@ -420,6 +422,12 @@ function App() {
                         break;
                     case 'ArrowRight':
                         setEditorTimestamp(x=>Math.max(x+100,0));
+                        break;
+                    case '[':
+                        setRenderStart(Math.min(editorTimestamp,renderEnd));
+                        break;
+                    case ']':
+                        setRenderEnd(Math.max(editorTimestamp,renderStart));
                         break;
                 }
             }
@@ -724,7 +732,7 @@ function App() {
                     {/*    <b>{record.length?formatTime(record[layer][record.length-1].t):null}</b>*/}
                     {/*    <span className='small'>&nbsp;{record.length}</span>*/}
                     {/*</div>*/}
-                    <TimeLine {...{editorTimestamp,setEditorTimestamp,record,setRecord,layer,setLayer}}/>
+                    <TimeLine {...{editorTimestamp,setEditorTimestamp,record,setRecord,layer,setLayer,renderStart,renderEnd}}/>
                 </div>}
                 {tabPage === 1 && <div className='controls-panel'>
                     {Object.entries(control).map(([k, v]) => <div key={k}><b>{k}</b>: {v}</div>)}
