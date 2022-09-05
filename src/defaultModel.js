@@ -40,6 +40,7 @@ const mikuConfig=()=>({
 
         control.mouth = 1;
         control.eyeOpen = 'o';
+        control.mouthType=control.mouthType||'happy';
         keyInput.forEach(o => {
             switch (o) {
                 case 'EyeHappy':

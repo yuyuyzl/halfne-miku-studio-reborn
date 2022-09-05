@@ -284,8 +284,8 @@ function App() {
     const [runPhysics,setRunPhysics]=useState(true);
     const [audioFile,setAudioFile]=useState();
 
-    const [renderStart,setRenderStart]=useState(0);
-    const [renderEnd,setRenderEnd]=useState(1000);
+    const [renderStart,setRenderStart]=useState(undefined);
+    const [renderEnd,setRenderEnd]=useState(undefined);
 
 
     const resetMiku=(rawControl={mouseX:W/2,mouseY:H/2,keyInput:[]})=>{
@@ -424,10 +424,10 @@ function App() {
                         setEditorTimestamp(x=>Math.max(x+100,0));
                         break;
                     case '[':
-                        setRenderStart(Math.min(editorTimestamp,renderEnd));
+                        setRenderStart(Math.min(editorTimestamp,renderEnd||Infinity));
                         break;
                     case ']':
-                        setRenderEnd(Math.max(editorTimestamp,renderStart));
+                        setRenderEnd(Math.max(editorTimestamp,renderStart||0));
                         break;
                 }
             }
@@ -513,6 +513,7 @@ function App() {
                 html2canvas(stageRef.current,{backgroundColor:null}).then(function(canvas) {
                     canvas.toBlob(o=> {
                         zip.file(`HMSR-Render-${('00000'+currentFrame).slice(-5)}.png`,o);
+                        console.log(performance.memory.totalJSHeapSize/performance.memory.jsHeapSizeLimit);
                         // FileSaver.saveAs(o, `HMSR-Render-${('00000'+currentFrame).slice(-5)}.png`);
                         // console.log(o);
                         const targetTime=(currentFrame+1)*1000/renderFps+editorTimestampOnPlay.current;
