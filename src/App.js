@@ -626,7 +626,7 @@ function App() {
                     handleMouseMove(e.touches?.[0]);
                 }}
             >
-                {stageBackground===undefined?<div className='stage-transparent' data-html2canvas-ignore={true}/>:null}
+                {stageBackground===false?<div className='stage-transparent' data-html2canvas-ignore={true}/>:null}
                 <Miku control={control} timestamp={timestamp} model={config.model} runPhysics={runPhysics} key={mikuResetter}/>
                 {playType!==1&&<div className={'mouse'} data-html2canvas-ignore={true} style={{left: control.mouseX + 'px', top: control.mouseY + 'px'}}/>}
                 {/*{playType===3?<div className='stage-debug'>{editorTimestamp}</div>:null}*/}
@@ -733,10 +733,10 @@ function App() {
                     <ToggleButtonGroup
                         value={stageBackground}
                         exclusive
-                        onChange={(e, v) => setStageBackground(v)}
+                        onChange={(e, v) => setStageBackground(v||false)}
                         label="Background"
                     >
-                        <ToggleButton value={undefined} aria-label="Transparent">
+                        <ToggleButton value={false} aria-label="Transparent">
                             Transparent
                         </ToggleButton>
                         <ToggleButton value={'#FFFFFF'} aria-label="White">
@@ -753,7 +753,7 @@ function App() {
                     <ToggleButtonGroup
                         value={stageBackground}
                         exclusive
-                        onChange={(e, v) => setStageBackground(v || '#FFFFFF')}
+                        onChange={(e, v) => setStageBackground(v || false)}
                         label="Background"
                     >
                         {config.background?
