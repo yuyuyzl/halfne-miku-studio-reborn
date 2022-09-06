@@ -508,6 +508,8 @@ function App() {
             let canceled = false;
             console.log(record);
             let zip=new JSZip();
+            let partCount=0;
+            let size=0;
             const updateControl = (currentFrame) => {
                 if (canceled) return;
                 const now = performance.now();
@@ -528,12 +530,18 @@ function App() {
                         }
                     })
                     canvas.toBlob(o => {
-                        if(currentFrame>0&&currentFrame%2000===0){
-                            zip.generateAsync({type:'blob'}).then(o=>
-                                FileSaver.saveAs(o,`HMSR-Render-part${currentFrame/2000}.zip`)
+                        size+=o.size;
+                        if(size>1024*1024*1024) {
+                            const currentPartCount = partCount;
+                            partCount++;
+                            zip.generateAsync({type: 'blob'}).then(o => {
+                                    FileSaver.saveAs(o, `HMSR-Render-part${currentPartCount}.zip`);
+                                }
                             )
-                            zip=new JSZip();
+                            zip = new JSZip();
+                            size=0;
                         }
+                        console.log(o.size);
                         zip.file(`HMSR-Render-${('00000'+currentFrame).slice(-5)}.png`,o);
                         // console.log(performance.memory.totalJSHeapSize/performance.memory.jsHeapSizeLimit);
                         // FileSaver.saveAs(o, `HMSR-Render-${('00000'+currentFrame).slice(-5)}.png`);
@@ -554,7 +562,7 @@ function App() {
             return () => {
                 canceled = true;
                 zip.generateAsync({type:'blob'}).then(o=>
-                    FileSaver.saveAs(o,'HMSR-Render.zip')
+                    FileSaver.saveAs(o,partCount===0?'HMSR-Render.zip':`HMSR-Render-part${partCount}.zip`)
                 )
             }
         }
@@ -663,7 +671,11 @@ function App() {
                 {playType!==1&&<div className={'mouse'} data-html2canvas-ignore={true} style={{left: control.mouseX + 'px', top: control.mouseY + 'px'}}/>}
                 {/*{playType===3?<div className='stage-debug'>{editorTimestamp}</div>:null}*/}
             </div>
-
+        {audioFile?<audio src={audioFile} ref={audioRef} onLoadedMetadata={e=> {
+            console.log(audioRef.current);
+            setRenderEnd(renderEnd=>renderEnd===undefined?audioRef.current.duration*1000:renderEnd);
+            setRenderStart(renderStart=>renderStart===undefined?0:renderStart);
+        }}/>:null}
         {playType!==2?<div className='fps'>
             <b>FPS: </b>{Math.round(fps)}
         </div>:null}
@@ -748,13 +760,6 @@ function App() {
                             FileSaver.saveAs(blob, "HMSR.json");
                         }} disabled={record?.length===0}><Save/></ToggleButton>
                     </ToggleButtonGroup>
-
-
-                    {audioFile?<audio src={audioFile} ref={audioRef} onLoadedMetadata={e=> {
-                        console.log(audioRef.current);
-                        setRenderEnd(renderEnd=>renderEnd===undefined?audioRef.current.duration*1000:renderEnd);
-                        setRenderStart(renderStart=>renderStart===undefined?0:renderStart);
-                    }}/>:null}
                     {/*<div className='timedisplay'>/</div>*/}
                     {/*<div className='timedisplay'>*/}
                     {/*    <b>{record.length?formatTime(record[layer][record.length-1].t):null}</b>*/}
