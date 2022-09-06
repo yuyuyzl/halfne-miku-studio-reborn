@@ -510,18 +510,28 @@ function App() {
             const zip=new JSZip();
             const updateControl = (currentFrame) => {
                 if (canceled) return;
-                html2canvas(stageRef.current,{backgroundColor:null}).then(function(canvas) {
-                    canvas.toBlob(o=> {
+                html2canvas(stageRef.current,{backgroundColor:null,removeContainer:false}).then(function(canvas) {
+                    document.querySelectorAll('.html2canvas-container').forEach(el => {
+                        const iframe = el.contentWindow;
+                        if (el) {
+                            el.src = 'about:blank';
+                            iframe.document.write('');
+                            iframe.document.clear();
+                            iframe.close();
+                            el.remove();
+                        }
+                    })
+                    canvas.toBlob(o => {
                         zip.file(`HMSR-Render-${('00000'+currentFrame).slice(-5)}.png`,o);
-                        console.log(performance.memory.totalJSHeapSize/performance.memory.jsHeapSizeLimit);
+                        // console.log(performance.memory.totalJSHeapSize/performance.memory.jsHeapSizeLimit);
                         // FileSaver.saveAs(o, `HMSR-Render-${('00000'+currentFrame).slice(-5)}.png`);
                         // console.log(o);
-                        const targetTime=(currentFrame+1)*1000/renderFps+editorTimestampOnPlay.current;
-                        if(targetTime<=renderEnd) {
+                        const targetTime = (currentFrame + 1) * 1000 / renderFps + editorTimestampOnPlay.current;
+                        if (targetTime <= renderEnd) {
                             setEditorTimestamp(targetTime);
                             setTimestamp(targetTime);
                             setTimeout(() => updateControl(currentFrame + 1));
-                        }else {
+                        } else {
                             togglePlayType(2);
                         }
                     });
@@ -861,3 +871,5 @@ function App() {
 }
 
 export default App;
+
+
