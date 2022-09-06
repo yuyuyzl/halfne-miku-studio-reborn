@@ -507,9 +507,15 @@ function App() {
         if(playType===3){
             let canceled = false;
             console.log(record);
-            const zip=new JSZip();
+            let zip=new JSZip();
             const updateControl = (currentFrame) => {
                 if (canceled) return;
+                const now = performance.now();
+                while (fpsArr.length > 0 && fpsArr[0] <= now - 1000) {
+                    fpsArr.shift();
+                }
+                fpsArr.push(now);
+                setFps((fpsArr.length-1)*1000/(now-fpsArr[0]));
                 html2canvas(stageRef.current,{backgroundColor:null,removeContainer:false}).then(function(canvas) {
                     document.querySelectorAll('.html2canvas-container').forEach(el => {
                         const iframe = el.contentWindow;
@@ -522,6 +528,12 @@ function App() {
                         }
                     })
                     canvas.toBlob(o => {
+                        if(currentFrame>0&&currentFrame%2000===0){
+                            zip.generateAsync({type:'blob'}).then(o=>
+                                FileSaver.saveAs(o,`HMSR-Render-part${currentFrame/2000}.zip`)
+                            )
+                            zip=new JSZip();
+                        }
                         zip.file(`HMSR-Render-${('00000'+currentFrame).slice(-5)}.png`,o);
                         // console.log(performance.memory.totalJSHeapSize/performance.memory.jsHeapSizeLimit);
                         // FileSaver.saveAs(o, `HMSR-Render-${('00000'+currentFrame).slice(-5)}.png`);
@@ -738,7 +750,11 @@ function App() {
                     </ToggleButtonGroup>
 
 
-                    {audioFile?<audio src={audioFile} ref={audioRef}/>:null}
+                    {audioFile?<audio src={audioFile} ref={audioRef} onLoadedMetadata={e=> {
+                        console.log(audioRef.current);
+                        setRenderEnd(renderEnd=>renderEnd===undefined?audioRef.current.duration*1000:renderEnd);
+                        setRenderStart(renderStart=>renderStart===undefined?0:renderStart);
+                    }}/>:null}
                     {/*<div className='timedisplay'>/</div>*/}
                     {/*<div className='timedisplay'>*/}
                     {/*    <b>{record.length?formatTime(record[layer][record.length-1].t):null}</b>*/}
@@ -820,6 +836,13 @@ function App() {
                             120 FPS
                         </ToggleButton>
                     </ToggleButtonGroup>
+                    &nbsp;
+                    {playType===3&&<div className='timedisplay'>
+                        <b>{Math.floor((editorTimestamp-renderStart)*renderFps/1000)}/{Math.floor((renderEnd-renderStart)*renderFps/1000)}</b>
+                        <span className='small'>&nbsp;{(Math.floor((editorTimestamp-renderStart)*renderFps/1000)/Math.floor((renderEnd-renderStart)*renderFps/1000)*100).toFixed(2)}%</span>
+                        {fps>0&&<span
+                            className='small'>&nbsp;ETA:{formatTime((renderEnd - editorTimestamp) * renderFps / fps)}</span>}
+                    </div>}
                 </div>}
                 {tabPage === 4 && <div className='controls-panel controls-panel-control'>
                 <ToggleButtonGroup>
