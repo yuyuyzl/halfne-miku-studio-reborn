@@ -2,7 +2,7 @@ import './Miku.less'
 import Part from "./Part";
 import {useEffect, useRef, useState} from "react";
 import {getInitPhysics, parseConfig, updatePhysics} from "../Engine/core";
-
+import {deepDiff} from "../Engine/modelUtils";
 
 export default function Miku(props){
     const {control,timestamp,model,runPhysics}=props;
@@ -21,6 +21,8 @@ export default function Miku(props){
             setPhysics(_physics);
         }
         let currentRenderState = parseConfig(model, control, _physics);
+        // if(!window.rs)window.rs=currentRenderState;
+        // else console.log(deepDiff(window.rs,currentRenderState));
         // console.log(model);
         // console.log(control,_physics);
         setRenderState(currentRenderState);

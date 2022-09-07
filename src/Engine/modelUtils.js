@@ -83,6 +83,31 @@ export const physicsScaleY=(path)=>(control,config,physics)=>{
     return ret>1?1:ret;
 }
 
+export const deepDiff=(base,target)=>{
+    let obase,otarget;
+    let isArray=false;
+    if(Array.isArray(base)&&Array.isArray(target)) {
+        isArray=true;
+        obase = Object.fromEntries(base.map((o, i) => [i, o]));
+        otarget = Object.fromEntries(target.map((o, i) => [i, o]));
+    }
+    else if(!Array.isArray(base)&&!Array.isArray(target)) {
+        obase = {...base}
+        otarget = {...target}
+    }
+    else return target;
+    Object.keys(obase).forEach(k=>{
+        if(otarget[k]===undefined)otarget[k]=null;
+    })
+    Object.keys(otarget).forEach(k=>{
+        if(obase[k]!==undefined){
+            if(otarget[k]===obase[k])delete otarget[k];
+            else if (typeof otarget[k]==='object'&&typeof obase[k]==='object')otarget[k]=deepDiff(obase[k],otarget[k])
+        }
+    })
+    if(isArray)return target.map((o,i)=>otarget[i]);else return otarget;
+}
+
 export const parseModelJS=(code)=>{
     return createScript(code)
         .runInContext(
