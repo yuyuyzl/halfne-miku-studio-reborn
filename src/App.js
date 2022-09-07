@@ -822,7 +822,14 @@ function App() {
                             playType !== 3 ? togglePlayType(3, renderStart) : togglePlayType(2)
                         }}
                     >
-                        <ToggleButton value={3}><Videocam/></ToggleButton>
+                        <ToggleButton value={3} disabled={record?.length===0}><Videocam/></ToggleButton>
+                    </ToggleButtonGroup>
+                    &nbsp;
+                    <ToggleButtonGroup>
+                        <ToggleButton value={1} onClick={()=>{
+                            const blob = new Blob([JSON.stringify(record)], {type: "text/plain;charset=utf-8"});
+                            FileSaver.saveAs(blob, "HMSR.json");
+                        }} disabled={record?.length===0}><Save/></ToggleButton>
                     </ToggleButtonGroup>
                     &nbsp;
                     <ToggleButtonGroup
@@ -859,7 +866,6 @@ function App() {
                                 const fr=new FileReader();
                                 fr.onload=()=> {
                                     let newConfig=parseModelJS(fr.result);
-                                    console.log(newConfig);
                                     setConfig(newConfig);
                                     resetMiku();
                                 };
