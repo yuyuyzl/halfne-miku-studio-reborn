@@ -16,6 +16,7 @@ export default function Miku(props){
         lastTime.current = timestamp;
         work(dt,model,control,physics,setPhysics,setRenderState,runPhysics);
     },[control,timestamp,runPhysics]);
+    // console.log(renderState);
     return <div className="miku">
         {/*<div className="debug">{JSON.stringify(control)}</div>*/}
         <Part renderState={renderState}/>

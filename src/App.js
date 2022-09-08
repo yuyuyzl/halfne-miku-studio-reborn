@@ -27,9 +27,10 @@ import Videocam from "@mui/icons-material/Videocam";
 import FileSaver from 'file-saver';
 
 import defaultConfig from './defaultModel'
-import {parseModelJS} from "./Engine/modelUtils";
+import {deepDiff, parseModelJS} from "./Engine/modelUtils";
 import html2canvas from "html2canvas";
 import JSZip from "jszip";
+import {getInitPhysics, parseConfig, work} from "./Engine/core";
 
 const W = 800;
 const H = 600;
@@ -346,7 +347,7 @@ function App() {
 
     useEffect(() => {
         let frametime=0;
-        const _waitUntilNextFrame = fpsTarget ? (f => setTimeout(f, fpsTarget===Infinity?(1000 / fpsTarget-frametime):0)) : requestAnimationFrame
+        const _waitUntilNextFrame = fpsTarget ? (f => setTimeout(f, fpsTarget!==Infinity?(1000 / fpsTarget-frametime):0)) : requestAnimationFrame
         waitUntilNextFrame=cb=>{
             _waitUntilNextFrame((...args)=>{
                 const tic= performance.now();
@@ -518,6 +519,7 @@ function App() {
                 }
                 fpsArr.push(now);
                 setFps((fpsArr.length-1)*1000/(now-fpsArr[0]));
+                console.log(currentFrame);
                 html2canvas(stageRef.current,{backgroundColor:null,removeContainer:false}).then(function(canvas) {
                     document.querySelectorAll('.html2canvas-container').forEach(el => {
                         const iframe = el.contentWindow;
@@ -827,8 +829,27 @@ function App() {
                     &nbsp;
                     <ToggleButtonGroup>
                         <ToggleButton value={1} onClick={()=>{
-                            const blob = new Blob([JSON.stringify(record)], {type: "text/plain;charset=utf-8"});
-                            FileSaver.saveAs(blob, "HMSR.json");
+                            let renderControl=config.parseControl(getRawControl(record,renderStart));
+                            let renderPhysics=getInitPhysics(parseConfig(config.model,control));
+                            let renderStates=[];
+                            for(let frame=0;frame<=Math.floor((renderEnd-renderStart)*renderFps/1000);frame++) {
+                                renderControl=config.parseControl({...renderControl,...getRawControl(record,renderStart+frame*1000/renderFps)})
+                                work(frame===0?0:(1000/renderFps),
+                                    config.model,
+                                    renderControl,
+                                    renderPhysics,
+                                    p=>{renderPhysics=p},
+                                    r=>renderStates.push(frame===0?r:deepDiff(renderStates[0],r)),
+                                )
+                            }
+                            const outputData={
+                                fps:renderFps,
+                                background:stageBackground,
+                                renderStates,
+                            }
+                            const blob = new Blob([JSON.stringify(outputData)], {type: "text/plain;charset=utf-8"});
+                            FileSaver.saveAs(blob, "HMSR-Render-Data.json");
+                            console.log(renderStates);
                         }} disabled={record?.length===0}><Save/></ToggleButton>
                     </ToggleButtonGroup>
                     &nbsp;

@@ -136,6 +136,7 @@ export const updatePhysics=(physics,root,dt)=> {
 }
 
 export const work=(dt,model,control,physics,setPhysics,setRenderState,runPhysics=true)=> {
+    console.log(dt,control,physics);
     const shouldResetPhysics = (dt > 200 || dt < 0 || !runPhysics);
     let _physics=physics;
     if (shouldResetPhysics) {
