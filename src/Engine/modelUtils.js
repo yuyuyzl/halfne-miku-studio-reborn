@@ -83,30 +83,48 @@ export const physicsScaleY=(path)=>(control,config,physics)=>{
     return ret>1?1:ret;
 }
 
-export const deepDiff=(base,target)=>{
-    let obase,otarget;
-    let isArray=false;
-    if(Array.isArray(base)&&Array.isArray(target)) {
-        isArray=true;
+export const deepDiff=(base,target)=> {
+    let obase, otarget;
+    if (Array.isArray(base) && Array.isArray(target)) {
         obase = Object.fromEntries(base.map((o, i) => [i, o]));
         otarget = Object.fromEntries(target.map((o, i) => [i, o]));
-    }
-    else if(!Array.isArray(base)&&!Array.isArray(target)) {
+    } else if (!Array.isArray(base) && !Array.isArray(target)) {
         obase = {...base}
         otarget = {...target}
-    }
-    else return target;
-    Object.keys(obase).forEach(k=>{
-        if(otarget[k]===undefined)otarget[k]=null;
+    } else return target;
+    Object.keys(obase).forEach(k => {
+        if (otarget[k] === undefined) otarget[k] = null;
     })
-    Object.keys(otarget).forEach(k=>{
-        if(obase[k]!==undefined){
-            if(otarget[k]===obase[k])delete otarget[k];
-            else if (typeof otarget[k]==='object'&&typeof obase[k]==='object')otarget[k]=deepDiff(obase[k],otarget[k])
+    Object.keys(otarget).forEach(k => {
+        if (obase[k] !== undefined) {
+            if (otarget[k] === obase[k]) delete otarget[k];
+            else if (typeof otarget[k] === 'object' && typeof obase[k] === 'object') {
+                otarget[k] = deepDiff(obase[k], otarget[k]);
+                if (Object.keys(otarget[k]).length === 0) delete otarget[k];
+            }
         }
-    })
-    if(isArray)return target.map((o,i)=>otarget[i]);else return otarget;
+    });
+    return otarget;
 }
+
+export const deepPatch=(base,patch)=>{
+    if(patch===null)return undefined;
+    if(typeof patch!=='object')return patch;
+    let obase, opatch;
+    if (Array.isArray(base)) {
+        obase = Object.fromEntries(base.map((o, i) => [i, o]));
+    } else {
+        obase = {...base}
+    }
+    opatch={...patch};
+    Object.keys(opatch).forEach(k=>{
+        if(obase[k]!==undefined&&opatch[k]!==undefined)obase[k]=deepPatch(obase[k],opatch[k]);
+        else obase[k]=opatch[k];
+        if(obase[k]===undefined)delete obase[k];
+    });
+    if(Array.isArray(base))return base.map((o,i)=>obase[i]);else return obase;
+}
+
 
 export const parseModelJS=(code)=>{
     return createScript(code)
