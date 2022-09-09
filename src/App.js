@@ -828,11 +828,13 @@ function App() {
                     </ToggleButtonGroup>
                     &nbsp;
                     <ToggleButtonGroup>
-                        <ToggleButton value={1} onClick={()=>{
+                        <ToggleButton value={1} onClick={async ()=>{
                             let renderControl=config.parseControl(getRawControl(record,renderStart));
                             let renderPhysics=getInitPhysics(parseConfig(config.model,control));
                             let renderStates=[];
-                            for(let frame=0;frame<=Math.floor((renderEnd-renderStart)*renderFps/1000);frame++) {
+                            const totFrame=Math.floor((renderEnd-renderStart)*renderFps/1000);
+                            let lastReport=0;
+                            for(let frame=0;frame<=totFrame;frame++) {
                                 renderControl=config.parseControl({...renderControl,...getRawControl(record,renderStart+frame*1000/renderFps)})
                                 work(frame===0?0:(1000/renderFps),
                                     config.model,
@@ -841,6 +843,11 @@ function App() {
                                     p=>{renderPhysics=p},
                                     r=>renderStates.push(frame===0?r:deepDiff(renderStates[0],r)),
                                 )
+                                if(performance.now()-lastReport>100){
+                                    lastReport=performance.now();
+                                    document.querySelector('.rendertime').innerHTML=(100*frame/totFrame).toFixed(2)+'%';
+                                    await new Promise(res=>setTimeout(res,0));
+                                }
                             }
                             const outputData={
                                 fps:renderFps,
@@ -849,6 +856,7 @@ function App() {
                             }
                             const blob = new Blob([JSON.stringify(outputData)], {type: "text/plain;charset=utf-8"});
                             FileSaver.saveAs(blob, "HMSR-Render-Data.json");
+                            document.querySelector('.rendertime').innerHTML='';
                             console.log(renderStates);
                         }} disabled={record?.length===0}><Save/></ToggleButton>
                     </ToggleButtonGroup>
@@ -870,11 +878,14 @@ function App() {
                         </ToggleButton>
                     </ToggleButtonGroup>
                     &nbsp;
-                    {playType===3&&<div className='timedisplay'>
-                        <b>{Math.floor((editorTimestamp-renderStart)*renderFps/1000)}/{Math.floor((renderEnd-renderStart)*renderFps/1000)}</b>
-                        <span className='small'>&nbsp;{(Math.floor((editorTimestamp-renderStart)*renderFps/1000)/Math.floor((renderEnd-renderStart)*renderFps/1000)*100).toFixed(2)}%</span>
+                    {<div className='timedisplay'>
+                        <b className='rendertime'/>
+                        {playType===3&&<>
+                            <b>{Math.floor((editorTimestamp - renderStart) * renderFps / 1000)}/{Math.floor((renderEnd - renderStart) * renderFps / 1000)}</b>
+                            <span className='small'>&nbsp;{(Math.floor((editorTimestamp-renderStart)*renderFps/1000)/Math.floor((renderEnd-renderStart)*renderFps/1000)*100).toFixed(2)}%</span>
                         {fps>0&&<span
                             className='small'>&nbsp;ETA:{formatTime((renderEnd - editorTimestamp) * renderFps / fps)}</span>}
+                        </>}
                     </div>}
                 </div>}
                 {tabPage === 4 && <div className='controls-panel controls-panel-control'>
