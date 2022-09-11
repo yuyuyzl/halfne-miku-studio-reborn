@@ -125,6 +125,31 @@ export const deepPatch=(base,patch)=>{
     if(Array.isArray(base))return base.map((o,i)=>obase[i]);else return obase;
 }
 
+export const linkedRotation=(basePath,targetPath)=>{
+    return (control, config) => {
+        const selfPos = getAbsolutePos(config, basePath);
+        if (!selfPos) return undefined;
+        const targetPos = getAbsolutePos(config, targetPath)
+        if (!targetPos) return undefined;
+        const dx = selfPos?.x - targetPos?.x;
+        const dy = selfPos?.y - targetPos?.y;
+        return Math.atan2(dy, dx) / Math.PI * 180 + 90;
+    }
+}
+
+export const linkedScaleY=(basePath,targetPath)=>{
+    let baseDis=undefined;
+    return (control, config) => {
+        const selfPos = getAbsolutePos(config, basePath);
+        if (!selfPos) return undefined;
+        const targetPos = getAbsolutePos(config, targetPath);
+        if (!targetPos) return undefined;
+        const dx = selfPos?.x - targetPos?.x;
+        const dy = selfPos?.y - targetPos?.y;
+        if(baseDis===undefined)baseDis=Math.sqrt(dx * dx + dy * dy);
+        return Math.sqrt(dx * dx + dy * dy) / baseDis;
+    }
+}
 
 export const parseModelJS=(code)=>{
     return createScript(code)
@@ -136,6 +161,8 @@ export const parseModelJS=(code)=>{
                 getAbsolutePos,
                 rotateVec,
                 toAbsolute,
-                toRelative
+                toRelative,
+                linkedScaleY,
+                linkedRotation
             }));
 }
