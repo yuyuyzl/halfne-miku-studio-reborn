@@ -24,6 +24,9 @@ import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import Camera from "@mui/icons-material/Camera";
 import Videocam from "@mui/icons-material/Videocam";
+import CopyAll from "@mui/icons-material/CopyAll";
+import Timer from "@mui/icons-material/Timer";
+import ContentCut from "@mui/icons-material/ContentCut";
 import FileSaver from 'file-saver';
 
 import defaultConfig from './defaultModel'
@@ -144,6 +147,19 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                                     record[i].v = true;
                                     return [...record]
                                 })} fontSize={'inherit'}/>}
+                                <CopyAll onClick={e=>{setRecord(record=>record.reduce((p,o,ii)=>  ii === i ? [...p, o, JSON.parse(JSON.stringify(o))] : [...p, o],[]));e.stopPropagation();}} fontSize={'inherit'}/>
+                                <ContentCut onClick={e=>{setRecord(record=> {
+                                    const layerLeft=record[i].a.filter(o=>o.t<=editorTimestamp);
+                                    const layerRight=record[i].a.filter(o=>o.t>=editorTimestamp);
+                                    if(layerLeft.length===0||layerRight.length===0)return record;
+                                    return record.reduce((p, o, ii) => ii === i ? [...p, {...JSON.parse(JSON.stringify(o)),a:layerLeft}, {...JSON.parse(JSON.stringify(o)),a:layerRight}] : [...p, o], [])
+                                });e.stopPropagation();}} fontSize={'inherit'}/>
+                                <Timer onClick={e=>{setRecord(record=>{
+                                    const delta=+prompt('Dt(ms)',0)||0;
+                                    if(!+delta)return record;
+                                    record[i].a=record[i].a.map(o=>({...o,t:o.t+delta}));
+                                    return [...record];
+                                });e.stopPropagation();}} fontSize={'inherit'}/>
                                 <Close onClick={e=>{setRecord(record=>record.filter((o,ii)=>ii!==i));setLayer(undefined);e.stopPropagation();}} fontSize={'inherit'}/>
                             </>}
                             {l ? <Lock onClick={() => setRecord(record => {
@@ -287,6 +303,7 @@ function App() {
 
     const [renderStart,setRenderStart]=useState(undefined);
     const [renderEnd,setRenderEnd]=useState(undefined);
+    const [renderScale,setRenderScale]=useState(1);
 
 
     const resetMiku=(rawControl={mouseX:W/2,mouseY:H/2,keyInput:[]})=>{
@@ -852,6 +869,7 @@ function App() {
                             const outputData={
                                 fps:renderFps,
                                 background:stageBackground,
+                                scale:renderScale,
                                 renderStates,
                             }
                             const blob = new Blob([JSON.stringify(outputData)], {type: "text/plain;charset=utf-8"});
@@ -875,6 +893,29 @@ function App() {
                         </ToggleButton>
                         <ToggleButton value={120} aria-label="120 FPS">
                             120 FPS
+                        </ToggleButton>
+                    </ToggleButtonGroup>
+                    &nbsp;
+                    <ToggleButtonGroup
+                        value={renderScale}
+                        exclusive
+                        onChange={(e, v) => setRenderScale(v || renderScale)}
+                        label="Render FPS"
+                    >
+                        <ToggleButton value={1} aria-label="1">
+                            1x
+                        </ToggleButton>
+                        <ToggleButton value={1.8} aria-label="2">
+                            1.8x
+                        </ToggleButton>
+                        <ToggleButton value={2} aria-label="2">
+                            2x
+                        </ToggleButton>
+                        <ToggleButton value={2.4} aria-label="2">
+                            2.4x
+                        </ToggleButton>
+                        <ToggleButton value={3} aria-label="3">
+                            3x
                         </ToggleButton>
                     </ToggleButtonGroup>
                     &nbsp;
