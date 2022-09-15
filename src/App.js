@@ -537,7 +537,7 @@ function App() {
                 fpsArr.push(now);
                 setFps((fpsArr.length-1)*1000/(now-fpsArr[0]));
                 console.log(currentFrame);
-                html2canvas(stageRef.current,{backgroundColor:null,removeContainer:false}).then(function(canvas) {
+                html2canvas(stageRef.current,{backgroundColor:null,removeContainer:false,scale:renderScale}).then(function(canvas) {
                     document.querySelectorAll('.html2canvas-container').forEach(el => {
                         const iframe = el.contentWindow;
                         if (el) {
@@ -828,7 +828,7 @@ function App() {
                 {tabPage === 3 && <div className='controls-panel controls-panel-control'>
                     <ToggleButtonGroup>
                         <ToggleButton value={1} onClick={()=>{
-                            html2canvas(stageRef.current,{backgroundColor:null}).then(function(canvas) {
+                            html2canvas(stageRef.current,{backgroundColor:null,scale:renderScale}).then(function(canvas) {
                                 canvas.toBlob(o=>FileSaver.saveAs(o,'HMSR-Render.png'));
                             });
                         }}><Camera/></ToggleButton>
