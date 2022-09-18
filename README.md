@@ -14,7 +14,7 @@ https://www.deviantart.com/johnsu/art/Halfne-Miku-Studio-396850314
 
 https://github.com/Bietol/HalfneMiku
 
-#还没有写文档但是快速教学
+# 还没有写文档但是快速教学
 
 ~~节选自群聊天记录~~  
 如果你要录制鼠标动作 需要按下左键 在舞台里拖才会被录制  
