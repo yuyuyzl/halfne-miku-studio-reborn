@@ -847,7 +847,7 @@ function App() {
                     <ToggleButtonGroup>
                         <ToggleButton value={1} onClick={async ()=>{
                             let renderControl=config.parseControl(getRawControl(record,renderStart));
-                            let renderPhysics=getInitPhysics(parseConfig(config.model,control));
+                            let renderPhysics=getInitPhysics(parseConfig(config.model,renderControl));
                             let renderStates=[];
                             const totFrame=Math.floor((renderEnd-renderStart)*renderFps/1000);
                             let lastReport=0;
