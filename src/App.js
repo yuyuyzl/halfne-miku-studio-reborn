@@ -690,6 +690,7 @@ function App() {
                 {playType!==1&&<div className={'mouse'} data-html2canvas-ignore={true} style={{left: control.mouseX + 'px', top: control.mouseY + 'px'}}/>}
                 {/*{playType===3?<div className='stage-debug'>{editorTimestamp}</div>:null}*/}
             </div>
+            <div className='stage-bottom'/>
         {audioFile?<audio src={audioFile} ref={audioRef} onLoadedMetadata={e=> {
             console.log(audioRef.current);
             setRenderEnd(renderEnd=>renderEnd===undefined?audioRef.current.duration*1000:renderEnd);

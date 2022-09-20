@@ -30,6 +30,9 @@ body{
     left: 0;
     color: #FFF;
   }
+  &-bottom{
+    height: calc( 100vh - 800px );
+  }
 }
 .controls{
   position: absolute;
@@ -230,4 +233,10 @@ body{
   opacity: 0.7;
   //border-top: 3px solid #F00;
   z-index: 2;
+}
+
+@media screen and (max-width: 800px) {
+  .controls,.stage-bottom{
+    display: none;
+  }
 }
