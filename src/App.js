@@ -1,6 +1,6 @@
 import './App.less';
 import Miku from "./Miku/Miku";
-import {useCallback, useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {
     Box, Tab, Tabs, ToggleButton, ToggleButtonGroup
 } from "@mui/material";
@@ -108,7 +108,7 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
         setEditorTimestamp(Math.max(l2t(100*(clientX-x)/width),0));
     }
 
-    return <div className='timeline'>
+    return useMemo(()=><div className='timeline'>
         <div className='timeline-L'>
             <div className='timeline-L-toolbar'>
                 <div className='timedisplay' onWheel={e=>{setEditorTimestamp(x=>Math.max(x+e.deltaY,0))}}>
@@ -267,7 +267,7 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                 <div className='timeline-R-content-layer'/>
             </div>
         </div>
-    </div>
+    </div>,[editorTimestamp,record,layer,renderStart,renderEnd,scale,centerOffset])
 }
 
 function App() {
@@ -275,7 +275,6 @@ function App() {
     const latestMousePos = useRef([W/2, H/2]);
     const latestMouseDown = useRef(false);
     const audioRef = useRef();
-    const renderOutput=useRef();
     const editorTimestampOnPlay = useRef(0);
     const [timestamp, setTimestamp] = useState(performance.now());
 
