@@ -79,7 +79,8 @@
   "scripts": {
     "start": "node scripts/start.js",
     "build": "node scripts/build.js",
-    "test": "node scripts/test.js"
+    "test": "node scripts/test.js",
+    "serve": "serve"
   },
   "eslintConfig": {
     "extends": [
@@ -158,7 +159,8 @@
   },
   "devDependencies": {
     "less": "^4.1.2",
-    "less-loader": "^7.3.0"
+    "less-loader": "^7.3.0",
+    "serve": "^14.0.1"
   },
   "homepage": "https://yuyuyzl.github.io/halfne-miku-studio-reborn/"
 }

@@ -1,0 +1,8 @@
+{
+  "public": "build",
+  "rewrites": [
+  { "source": "/halfne-miku-studio-reborn/:a", "destination": "/:a" },
+  { "source": "/halfne-miku-studio-reborn/:a/:b", "destination": "/:a/:b" },
+  { "source": "/halfne-miku-studio-reborn/:a/:b/:c", "destination": "/:a/:b/:c" }
+]
+}
