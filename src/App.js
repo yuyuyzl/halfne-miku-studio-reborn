@@ -111,7 +111,7 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
     return useMemo(()=><div className='timeline'>
         <div className='timeline-L'>
             <div className='timeline-L-toolbar'>
-                <div className='timedisplay' onWheel={e=>{setEditorTimestamp(x=>Math.max(x+e.deltaY,0))}}>
+                <div className='timedisplay' onWheel={e=>{setEditorTimestamp(x=>Math.max(x+e.deltaY,0))}} title={editorTimestamp.toFixed(2)+'\n使用滚轮前进后退'}>
                     <b>{formatTime(editorTimestamp)}</b>
                     <span className='small'>&nbsp;{('000'+Math.floor(editorTimestamp%1000)).slice(-3)}</span>
                 </div>
@@ -671,7 +671,7 @@ function App() {
     return (<div className="App">
             <div
                 className="stage"
-                style={{width: W + 'px', height: H + 'px',backgroundColor:stageBackground,backgroundImage:'url("'+stageBackground+'")'}}
+                style={{width: W + 'px', height: H + 'px',backgroundColor:stageBackground}}
                 ref={stageRef}
                 onMouseMove={handleMouseMove}
                 onMouseDown={()=>{latestMouseDown.current=true}}
@@ -684,7 +684,7 @@ function App() {
                     handleMouseMove(e.touches?.[0]);
                 }}
             >
-                {stageBackground===false?<div className='stage-transparent' data-html2canvas-ignore={true}/>:null}
+                {useMemo(()=>stageBackground===false?<div className='stage-transparent' data-html2canvas-ignore={true}/>:stageBackground.startsWith('#')?null:<img className='stage-background' src={stageBackground}/>,[stageBackground])}
                 <Miku control={control} timestamp={timestamp} model={config.model} runPhysics={runPhysics} key={mikuResetter}/>
                 {playType!==1&&<div className={'mouse'} data-html2canvas-ignore={true} style={{left: control.mouseX + 'px', top: control.mouseY + 'px'}}/>}
                 {/*{playType===3?<div className='stage-debug'>{editorTimestamp}</div>:null}*/}
@@ -710,42 +710,42 @@ function App() {
                     </Tabs>
                 </Box>,[tabPage])}
 
-                {tabPage === 0 && <div className='controls-panel controls-panel-control'>
+                {useMemo(()=>tabPage === 0 && <div className='controls-panel controls-panel-control'>
                     <ToggleButtonGroup
                         value={playType}
                         exclusive
                         onChange={(e, v) =>togglePlayType(v)}
                     >
-                        <ToggleButton value={-1} disabled={record[layer]?.l}>
+                        <ToggleButton value={-1} disabled={record[layer]?.l} title='录制 (Shift+Space)'>
                             <FiberManualRecord/>
                         </ToggleButton>
-                        <ToggleButton value={1} disabled={record?.length===0}>
+                        <ToggleButton value={1} disabled={record?.length===0} title='播放 (Space)'>
                             <PlayArrow/>
                         </ToggleButton>
-                        <ToggleButton value={2}>
+                        <ToggleButton value={2} title='暂停 (Space)'>
                             <Pause/>
                         </ToggleButton>
                     </ToggleButtonGroup>
                     &nbsp;
                     <ToggleButtonGroup>
-                        <ToggleButton value={-1} onClick={e=>{setEditorTimestamp(x=>0)}}><FirstPage/></ToggleButton>
-                        <ToggleButton value={-1} onClick={e=>{setEditorTimestamp(x=>Math.max(x-100,0))}}><FastRewind/></ToggleButton>
-                        <ToggleButton value={1} onClick={e=>{setEditorTimestamp(x=>x+100)}}><FastForward/></ToggleButton>
+                        <ToggleButton value={-1} onClick={e=>{setEditorTimestamp(x=>0)}} title='首帧'><FirstPage/></ToggleButton>
+                        <ToggleButton value={-1} onClick={e=>{setEditorTimestamp(x=>Math.max(x-100,0))}} title='后退'><FastRewind/></ToggleButton>
+                        <ToggleButton value={1} onClick={e=>{setEditorTimestamp(x=>x+100)}} title='前进'><FastForward/></ToggleButton>
                     </ToggleButtonGroup>
                     &nbsp;
                     <ToggleButtonGroup>
-                        <ToggleButton value={1} onClick={()=>resetMiku()}><Refresh/></ToggleButton>
+                        <ToggleButton value={1} onClick={()=>resetMiku()} title='重置'><Refresh/></ToggleButton>
                     </ToggleButtonGroup>
                     &nbsp;
                     <ToggleButtonGroup
                         value={runPhysics}
                         exclusive
                         onChange={() =>setRunPhysics(x=>!x)}>
-                        <ToggleButton value={false} ><Lock/></ToggleButton>
+                        <ToggleButton value={false} title='停用物理'><Lock/></ToggleButton>
                     </ToggleButtonGroup>
                     &nbsp;
                     <ToggleButtonGroup>
-                        <ToggleButton value={1} onClick={()=>{
+                        <ToggleButton value={1} title='导入音乐' onClick={()=>{
                             try {
                                 const input=document.createElement('input');
                                 input.type='file';
@@ -758,7 +758,7 @@ function App() {
                                 input.click();
                             }catch {}
                         }}><MusicNote/></ToggleButton>
-                        <ToggleButton value={1} onClick={()=>{
+                        <ToggleButton value={1} title='导入动作' onClick={()=>{
                             try {
                                 const input=document.createElement('input');
                                 input.type='file';
@@ -774,7 +774,7 @@ function App() {
                                 input.click();
                             }catch {}
                         }}><FileOpen/></ToggleButton>
-                        <ToggleButton value={1} onClick={()=>{
+                        <ToggleButton value={1} title='导出动作' onClick={()=>{
                             const blob = new Blob([JSON.stringify(record)], {type: "text/plain;charset=utf-8"});
                             FileSaver.saveAs(blob, "HMSR.json");
                         }} disabled={record?.length===0}><Save/></ToggleButton>
@@ -785,11 +785,11 @@ function App() {
                     {/*    <span className='small'>&nbsp;{record.length}</span>*/}
                     {/*</div>*/}
                     <TimeLine {...{editorTimestamp,setEditorTimestamp,record,setRecord,layer,setLayer,renderStart,renderEnd}}/>
-                </div>}
+                </div>,[editorTimestamp, layer, playType, record, renderEnd, renderStart, resetMiku, runPhysics, tabPage, togglePlayType])}
                 {tabPage === 1 && <div className='controls-panel'>
                     {Object.entries(control).map(([k, v]) => <div key={k}><b>{k}</b>: {v}</div>)}
                 </div>}
-                {tabPage === 2 && <div className='controls-panel'>
+                {useMemo(()=>tabPage === 2 && <div className='controls-panel'>
                     <ToggleButtonGroup
                         value={stageBackground}
                         exclusive
@@ -824,10 +824,10 @@ function App() {
                             )
                             :null}
                     </ToggleButtonGroup>
-                </div>}
-                {tabPage === 3 && <div className='controls-panel controls-panel-control'>
+                </div>,[config.background, stageBackground, tabPage])}
+                {useMemo(()=>tabPage === 3 && <div className='controls-panel controls-panel-control'>
                     <ToggleButtonGroup>
-                        <ToggleButton value={1} onClick={()=>{
+                        <ToggleButton value={1} title='保存当前画面' onClick={()=>{
                             html2canvas(stageRef.current,{backgroundColor:null,scale:renderScale}).then(function(canvas) {
                                 canvas.toBlob(o=>FileSaver.saveAs(o,'HMSR-Render.png'));
                             });
@@ -841,11 +841,11 @@ function App() {
                             playType !== 3 ? togglePlayType(3, renderStart) : togglePlayType(2)
                         }}
                     >
-                        <ToggleButton value={3} disabled={record?.length===0}><Videocam/></ToggleButton>
+                        <ToggleButton value={3} disabled={record?.length===0} title='渲染为PNG序列（较慢）'><Videocam/></ToggleButton>
                     </ToggleButtonGroup>
                     &nbsp;
                     <ToggleButtonGroup>
-                        <ToggleButton value={1} onClick={async ()=>{
+                        <ToggleButton value={1} title='保存渲染数据集' onClick={async ()=>{
                             let renderControl=config.parseControl(getRawControl(record,renderStart));
                             let renderPhysics=getInitPhysics(parseConfig(config.model,renderControl));
                             let renderStates=[];
@@ -900,7 +900,7 @@ function App() {
                         value={renderScale}
                         exclusive
                         onChange={(e, v) => setRenderScale(v || renderScale)}
-                        label="Render FPS"
+                        label="Render Scale"
                     >
                         <ToggleButton value={1} aria-label="1">
                             1x
@@ -928,10 +928,10 @@ function App() {
                             className='small'>&nbsp;ETA:{formatTime((renderEnd - editorTimestamp) * renderFps / fps)}</span>}
                         </>}
                     </div>}
-                </div>}
-                {tabPage === 4 && <div className='controls-panel controls-panel-control'>
+                </div>,[config, editorTimestamp, fps, playType, record, renderEnd, renderFps, renderScale, renderStart, stageBackground, tabPage, togglePlayType])}
+                {useMemo(()=>tabPage === 4 && <div className='controls-panel controls-panel-control'>
                 <ToggleButtonGroup>
-                    <ToggleButton value={1} onClick={()=>{
+                    <ToggleButton value={1} title='导入模型' onClick={()=>{
                         try {
                             const input=document.createElement('input');
                             input.type='file';
@@ -972,7 +972,7 @@ function App() {
                             120 FPS
                         </ToggleButton>
                     </ToggleButtonGroup>
-                </div>}
+                </div>,[fpsTarget, resetMiku, tabPage])}
             </div>
         </div>);
 }
