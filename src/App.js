@@ -305,16 +305,16 @@ function App() {
     const [renderScale,setRenderScale]=useState(1);
 
 
-    const resetMiku=(rawControl={mouseX:W/2,mouseY:H/2,keyInput:[]})=>{
+    const resetMiku=useCallback((rawControl={mouseX:W/2,mouseY:H/2,keyInput:[]})=>{
         latestMousePos.current=[rawControl.mouseX,rawControl.mouseY];
         setControl(config.parseControl(rawControl));
         setMikuResetter(i=>i+1);
-    }
+    },[config])
 
     const parseKeyMapping = (keyList, keyMapping) => keyList.map(o => keyMapping.filter(([k, v]) => v === o).map(([k, v]) => k))
         .reduce((p, c) => [...p, ...c], []);
 
-    const togglePlayType=(v,fromTimestamp=editorTimestamp)=> {
+    const togglePlayType=useCallback((v,fromTimestamp=editorTimestamp)=> {
         editorTimestampOnPlay.current=fromTimestamp;
         if (v === -1) {
             // setCurrentFrame(undefined);
@@ -359,7 +359,7 @@ function App() {
 
         setPlayType(v || 0);
         playTypeChangeTime.current=performance.now();
-    }
+    },[editorTimestamp, layer, playType, record, resetMiku]);
 
     useEffect(() => {
         let frametime=0;
@@ -700,7 +700,7 @@ function App() {
         </div>:null}
             <div className="controls">
                 {/*<FormControlLabel control={<Checkbox checked={checked} onChange={e=>setChecked(e.target.checked)}/>} label="Label"/>*/}
-                <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
+                {useMemo(()=><Box sx={{borderBottom: 1, borderColor: 'divider'}}>
                     <Tabs value={tabPage} onChange={(e, v) => setTabPage(v)} aria-label="basic tabs example">
                         <Tab label="Control"/>
                         <Tab label="Info"/>
@@ -708,7 +708,7 @@ function App() {
                         <Tab label="Render"/>
                         <Tab label="Settings"/>
                     </Tabs>
-                </Box>
+                </Box>,[tabPage])}
 
                 {tabPage === 0 && <div className='controls-panel controls-panel-control'>
                     <ToggleButtonGroup
