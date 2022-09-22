@@ -83,8 +83,8 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
     const timelineRef=useRef();
     const selectionDragging=useRef(false);
 
-    const t2l=(timestamp)=>((timestamp-centerOffset)/scale+50);
-    const l2t = (left) => centerOffset+(left-50)*scale;
+    const t2l=useCallback((timestamp)=>((timestamp-centerOffset)/scale+50),[centerOffset, scale]);
+    const l2t = useCallback((left) => centerOffset+(left-50)*scale,[centerOffset, scale]);
     const rulerScale=[1e2,2e2,5e2,1e3,2e3,5e3,1e4,2e4,6e4,12e4,3e5,6e5].reduce((p,c)=>p?p:c>=scale*5?c:0,0);
     const marks=(new Array(Math.floor(scale*100/rulerScale))).fill(0)
         .map((o,i)=>((Math.ceil(l2t(0)/rulerScale)+i)*rulerScale));
@@ -102,20 +102,25 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
         }
     },[scale])
 
-    const handleTimelineMouse=e=>{
+    const handleTimelineMouse=useCallback(e=>{
         const {x,width}=timelineRef.current.getBoundingClientRect();
         const {clientX}=e;
         setEditorTimestamp(Math.max(l2t(100*(clientX-x)/width),0));
-    }
+    },[l2t, setEditorTimestamp]);
 
-    return useMemo(()=><div className='timeline'>
+    return <div className='timeline'>
         <div className='timeline-L'>
-            <div className='timeline-L-toolbar'>
-                <div className='timedisplay' onWheel={e=>{setEditorTimestamp(x=>Math.max(x+e.deltaY,0))}} title={editorTimestamp.toFixed(2)+'\n使用滚轮前进后退'}>
+            {useMemo(()=>
+                    <div className='timeline-L-toolbar'>
+                <div className='timedisplay' onWheel={e => {
+                    setEditorTimestamp(x => Math.max(x + e.deltaY, 0))
+                }} title={editorTimestamp.toFixed(2) + '\n使用滚轮前进后退'}>
                     <b>{formatTime(editorTimestamp)}</b>
-                    <span className='small'>&nbsp;{('000'+Math.floor(editorTimestamp%1000)).slice(-3)}</span>
+                    <span className='small'>&nbsp;{('000' + Math.floor(editorTimestamp % 1000)).slice(-3)}</span>
                 </div>
             </div>
+            ,[editorTimestamp, setEditorTimestamp])}
+            {useMemo(()=>
             <div className='timeline-L-layer'>
 
                 {record.map((o,i)=> {
@@ -180,8 +185,11 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                     New Layer
                 </div>
             </div>
+                ,[editorTimestamp, layer, record, setLayer, setRecord])}
         </div>
         <div className='timeline-R'>
+
+            {useMemo(()=>
             <div
                 ref={timelineRef}
                 className='timeline-R-time'
@@ -195,6 +203,9 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                 {(t2l(renderEnd)>=0&&t2l(renderEnd)<100)?<div className='timeline-R-time-render-R' style={{left:t2l(renderEnd)+'%'}}/>:null}
                 {(t2l(editorTimestamp)>=0&&t2l(editorTimestamp)<100)?<div className='timeline-R-time-arrow' style={{left:t2l(editorTimestamp)+'%'}}/>:null}
             </div>
+                ,[editorTimestamp, handleTimelineMouse, marks, renderEnd, renderStart, t2l])}
+
+            {useMemo(()=>
             <div
                 className='timeline-R-content'
                 // onMouseMove={e=>{e.buttons&&handleTimelineMouse(e)}}
@@ -266,8 +277,9 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                 )}
                 <div className='timeline-R-content-layer'/>
             </div>
+                ,[record, scale, l2t, setRecord, t2l, setEditorTimestamp])}
         </div>
-    </div>,[editorTimestamp,record,layer,renderStart,renderEnd,scale,centerOffset])
+    </div>
 }
 
 function App() {
@@ -597,7 +609,7 @@ function App() {
                         t: record[layer].a.length===0?editorTimestampOnPlay.current:timestamp - playTypeChangeTime.current+editorTimestampOnPlay.current,
                         c: {mouseX:latestMouseDown.current?mouseX:undefined,mouseY:latestMouseDown.current?mouseY:undefined,keyInput:keyInput?.length?keyInput:undefined},
                     });
-                    return record;
+                    return [...record];
                 }
             )
             setEditorTimestamp(timestamp - playTypeChangeTime.current+editorTimestampOnPlay.current);
