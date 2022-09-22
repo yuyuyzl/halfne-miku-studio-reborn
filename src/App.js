@@ -702,10 +702,11 @@ function App() {
                 {/*<FormControlLabel control={<Checkbox checked={checked} onChange={e=>setChecked(e.target.checked)}/>} label="Label"/>*/}
                 {useMemo(()=><Box sx={{borderBottom: 1, borderColor: 'divider'}}>
                     <Tabs value={tabPage} onChange={(e, v) => setTabPage(v)} aria-label="basic tabs example">
-                        <Tab label="Control"/>
+                        <Tab label="Timeline"/>
                         <Tab label="Info"/>
                         <Tab label="Background"/>
                         <Tab label="Render"/>
+                        <Tab label="KeyMapping"/>
                         <Tab label="Settings"/>
                     </Tabs>
                 </Box>,[tabPage])}
@@ -841,7 +842,7 @@ function App() {
                             playType !== 3 ? togglePlayType(3, renderStart) : togglePlayType(2)
                         }}
                     >
-                        <ToggleButton value={3} disabled={record?.length===0} title='渲染为PNG序列（较慢）'><Videocam/></ToggleButton>
+                        <ToggleButton value={3} disabled={record?.length===0} title='渲染为PNG序列 (较慢)'><Videocam/></ToggleButton>
                     </ToggleButtonGroup>
                     &nbsp;
                     <ToggleButtonGroup>
@@ -929,7 +930,15 @@ function App() {
                         </>}
                     </div>}
                 </div>,[config, editorTimestamp, fps, playType, record, renderEnd, renderFps, renderScale, renderStart, stageBackground, tabPage, togglePlayType])}
-                {useMemo(()=>tabPage === 4 && <div className='controls-panel controls-panel-control'>
+                {useMemo(()=>tabPage === 4 && <div className='controls-panel'>
+                    {keyMapping.map(([k, ...v],i) => <div key={k}><b onClick={()=>{
+                        setKeyMapping(_keyMapping=>{
+                            _keyMapping[i]=[k,...window.keyList];
+                            return [..._keyMapping];
+                        })
+                    }} title={'按住目标按键并单击以修改按键绑定'}>{k}</b>: {v?.length?v.join(', '):'None'}</div>)}
+                </div>,[keyMapping, tabPage])}
+                {useMemo(()=>tabPage === 5 && <div className='controls-panel controls-panel-control'>
                 <ToggleButtonGroup>
                     <ToggleButton value={1} title='导入模型' onClick={()=>{
                         try {
