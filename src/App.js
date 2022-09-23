@@ -77,6 +77,89 @@ const getRawControl=(record,targetTime)=>{
     return newControl;
 }
 
+function TimeLineButtons({playType,togglePlayType,record,layer,setEditorTimestamp,resetMiku,runPhysics,setRunPhysics,setAudioFile,setRecord}){
+    return <>
+        {useMemo(()=><ToggleButtonGroup
+            value={playType}
+            exclusive
+            onChange={(e, v) =>togglePlayType(v)}
+        >
+            <ToggleButton value={-1} disabled={record[layer]?.l} title='录制 (Shift+Space)'>
+                <FiberManualRecord/>
+            </ToggleButton>
+            <ToggleButton value={1} disabled={record?.length===0} title='播放 (Space)'>
+                <PlayArrow/>
+            </ToggleButton>
+            <ToggleButton value={2} title='暂停 (Space)'>
+                <Pause/>
+            </ToggleButton>
+        </ToggleButtonGroup>,[layer, playType, record, togglePlayType])}
+        
+        &nbsp;
+
+        {useMemo(()=> <ToggleButtonGroup>
+            <ToggleButton value={-1} onClick={e=>{setEditorTimestamp(x=>0)}} title='首帧'><FirstPage/></ToggleButton>
+            <ToggleButton value={-1} onClick={e=>{setEditorTimestamp(x=>Math.max(x-100,0))}} title='后退'><FastRewind/></ToggleButton>
+            <ToggleButton value={1} onClick={e=>{setEditorTimestamp(x=>x+100)}} title='前进'><FastForward/></ToggleButton>
+        </ToggleButtonGroup>,[setEditorTimestamp])}
+       
+        &nbsp;
+
+        {useMemo(()=><ToggleButtonGroup>
+            <ToggleButton value={1} onClick={()=>resetMiku()} title='重置'><Refresh/></ToggleButton>
+        </ToggleButtonGroup>,[resetMiku])}
+        
+        &nbsp;
+
+        {useMemo(()=><ToggleButtonGroup
+            value={runPhysics}
+            exclusive
+            onChange={() =>setRunPhysics(x=>!x)}>
+            <ToggleButton value={false} title='停用物理'><Lock/></ToggleButton>
+        </ToggleButtonGroup>,[runPhysics, setRunPhysics])}
+        
+        &nbsp;
+
+        <ToggleButtonGroup>
+            {useMemo(()=><ToggleButton value={1} title='导入音乐' onClick={()=>{
+                try {
+                    const input=document.createElement('input');
+                    input.type='file';
+                    input.onchange=(e)=>{
+                        console.log(e.target.files[0]);
+                        const fr=new FileReader();
+                        fr.onload=()=>setAudioFile(fr.result);
+                        fr.readAsDataURL(e.target.files[0]);
+                    };
+                    input.click();
+                }catch {}
+            }}><MusicNote/></ToggleButton>,[setAudioFile])}
+
+            {useMemo(()=><ToggleButton value={1} title='导入动作' onClick={()=>{
+                try {
+                    const input=document.createElement('input');
+                    input.type='file';
+                    input.onchange=(e)=>{
+                        const fr=new FileReader();
+                        fr.onload=()=> {
+                            let _record=JSON.parse(fr.result);
+                            _record=_record.map(o=>Array.isArray(o)?{a:o}:o);
+                            setRecord(_record);
+                        };
+                        fr.readAsText(e.target.files[0])
+                    };
+                    input.click();
+                }catch {}
+            }}><FileOpen/></ToggleButton>,[setRecord])}
+            {useMemo(()=><ToggleButton value={1} title='导出动作' onClick={()=>{
+                const blob = new Blob([JSON.stringify(record)], {type: "text/plain;charset=utf-8"});
+                FileSaver.saveAs(blob, "HMSR.json");
+            }} disabled={record?.length===0}><Save/></ToggleButton>,[record])}
+        </ToggleButtonGroup>
+        
+    </>
+}
+
 function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,setLayer,renderStart,renderEnd}){
     const [scale,setScale]=useState(600);
     const [centerOffset,setCenterOffset]=useState(30000);
@@ -323,7 +406,7 @@ function App() {
         setMikuResetter(i=>i+1);
     },[config])
 
-    const parseKeyMapping = (keyList, keyMapping) => keyList.map(o => keyMapping.filter(([k, v]) => v === o).map(([k, v]) => k))
+    const parseKeyMapping = (keyList, keyMapping) => keyList.map(o => keyMapping.filter(([k, ...v]) => v.includes(o)).map(([k]) => k))
         .reduce((p, c) => [...p, ...c], []);
 
     const togglePlayType=useCallback((v,fromTimestamp=editorTimestamp)=> {
@@ -423,6 +506,7 @@ function App() {
                                 for (let c of l.a) {
                                     if (c.selected) {
                                         c.c.keyInput=parseKeyMapping(window.keyList,keyMapping);
+                                        console.log(c.c.keyInput);
                                     }
                                 }
                             }
@@ -467,7 +551,7 @@ function App() {
 
 
         const keyboardHandler = e => {
-            if (e.type === 'keydown') {
+            if (e.type === 'keydown'&&e.key!=='Alt'&&e.key!=='Control'&&e.key!=='Shift') {
                 if (!window.keyList.includes(e.key)) window.keyList.push(e.key);
             } else {
                 window.keyList = window.keyList.filter(o => o !== e.key);
@@ -697,7 +781,7 @@ function App() {
                 }}
             >
                 {useMemo(()=>stageBackground===false?<div className='stage-transparent' data-html2canvas-ignore={true}/>:stageBackground.startsWith('#')?null:<img className='stage-background' src={stageBackground}/>,[stageBackground])}
-                <Miku control={control} timestamp={timestamp} model={config.model} runPhysics={runPhysics} key={mikuResetter}/>
+                {useMemo(()=><Miku control={control} timestamp={timestamp} model={config.model} runPhysics={runPhysics} key={mikuResetter}/>,[config.model, control, mikuResetter, runPhysics, timestamp])}
                 {playType!==1&&<div className={'mouse'} data-html2canvas-ignore={true} style={{left: control.mouseX + 'px', top: control.mouseY + 'px'}}/>}
                 {/*{playType===3?<div className='stage-debug'>{editorTimestamp}</div>:null}*/}
             </div>
@@ -724,79 +808,7 @@ function App() {
                 </Box>,[tabPage])}
 
                 {useMemo(()=>tabPage === 0 && <div className='controls-panel controls-panel-control'>
-                    <ToggleButtonGroup
-                        value={playType}
-                        exclusive
-                        onChange={(e, v) =>togglePlayType(v)}
-                    >
-                        <ToggleButton value={-1} disabled={record[layer]?.l} title='录制 (Shift+Space)'>
-                            <FiberManualRecord/>
-                        </ToggleButton>
-                        <ToggleButton value={1} disabled={record?.length===0} title='播放 (Space)'>
-                            <PlayArrow/>
-                        </ToggleButton>
-                        <ToggleButton value={2} title='暂停 (Space)'>
-                            <Pause/>
-                        </ToggleButton>
-                    </ToggleButtonGroup>
-                    &nbsp;
-                    <ToggleButtonGroup>
-                        <ToggleButton value={-1} onClick={e=>{setEditorTimestamp(x=>0)}} title='首帧'><FirstPage/></ToggleButton>
-                        <ToggleButton value={-1} onClick={e=>{setEditorTimestamp(x=>Math.max(x-100,0))}} title='后退'><FastRewind/></ToggleButton>
-                        <ToggleButton value={1} onClick={e=>{setEditorTimestamp(x=>x+100)}} title='前进'><FastForward/></ToggleButton>
-                    </ToggleButtonGroup>
-                    &nbsp;
-                    <ToggleButtonGroup>
-                        <ToggleButton value={1} onClick={()=>resetMiku()} title='重置'><Refresh/></ToggleButton>
-                    </ToggleButtonGroup>
-                    &nbsp;
-                    <ToggleButtonGroup
-                        value={runPhysics}
-                        exclusive
-                        onChange={() =>setRunPhysics(x=>!x)}>
-                        <ToggleButton value={false} title='停用物理'><Lock/></ToggleButton>
-                    </ToggleButtonGroup>
-                    &nbsp;
-                    <ToggleButtonGroup>
-                        <ToggleButton value={1} title='导入音乐' onClick={()=>{
-                            try {
-                                const input=document.createElement('input');
-                                input.type='file';
-                                input.onchange=(e)=>{
-                                    console.log(e.target.files[0]);
-                                    const fr=new FileReader();
-                                    fr.onload=()=>setAudioFile(fr.result);
-                                    fr.readAsDataURL(e.target.files[0]);
-                                };
-                                input.click();
-                            }catch {}
-                        }}><MusicNote/></ToggleButton>
-                        <ToggleButton value={1} title='导入动作' onClick={()=>{
-                            try {
-                                const input=document.createElement('input');
-                                input.type='file';
-                                input.onchange=(e)=>{
-                                    const fr=new FileReader();
-                                    fr.onload=()=> {
-                                        let _record=JSON.parse(fr.result);
-                                        _record=_record.map(o=>Array.isArray(o)?{a:o}:o);
-                                        setRecord(_record);
-                                    };
-                                    fr.readAsText(e.target.files[0])
-                                };
-                                input.click();
-                            }catch {}
-                        }}><FileOpen/></ToggleButton>
-                        <ToggleButton value={1} title='导出动作' onClick={()=>{
-                            const blob = new Blob([JSON.stringify(record)], {type: "text/plain;charset=utf-8"});
-                            FileSaver.saveAs(blob, "HMSR.json");
-                        }} disabled={record?.length===0}><Save/></ToggleButton>
-                    </ToggleButtonGroup>
-                    {/*<div className='timedisplay'>/</div>*/}
-                    {/*<div className='timedisplay'>*/}
-                    {/*    <b>{record.length?formatTime(record[layer][record.length-1].t):null}</b>*/}
-                    {/*    <span className='small'>&nbsp;{record.length}</span>*/}
-                    {/*</div>*/}
+                    <TimeLineButtons {...{playType,togglePlayType,record,layer,setEditorTimestamp,resetMiku,runPhysics,setRunPhysics,setAudioFile,setRecord}}/>
                     <TimeLine {...{editorTimestamp,setEditorTimestamp,record,setRecord,layer,setLayer,renderStart,renderEnd}}/>
                 </div>,[editorTimestamp, layer, playType, record, renderEnd, renderStart, resetMiku, runPhysics, tabPage, togglePlayType])}
                 {tabPage === 1 && <div className='controls-panel'>
