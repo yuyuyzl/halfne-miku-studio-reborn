@@ -77,23 +77,23 @@ const getRawControl=(record,targetTime)=>{
     return newControl;
 }
 
-function TimeLineButtons({playType,togglePlayType,record,layer,setEditorTimestamp,resetMiku,runPhysics,setRunPhysics,setAudioFile,setRecord}){
+function TimeLineButtons({playType,togglePlayType,recordRef,canRecord,canPlay,setEditorTimestamp,resetMiku,runPhysics,setRunPhysics,setAudioFile,setRecord}){
     return <>
         {useMemo(()=><ToggleButtonGroup
             value={playType}
             exclusive
             onChange={(e, v) =>togglePlayType(v)}
         >
-            <ToggleButton value={-1} disabled={record[layer]?.l} title='录制 (Shift+Space)'>
+            <ToggleButton value={-1} disabled={canRecord} title='录制 (Shift+Space)'>
                 <FiberManualRecord/>
             </ToggleButton>
-            <ToggleButton value={1} disabled={record?.length===0} title='播放 (Space)'>
+            <ToggleButton value={1} disabled={canPlay} title='播放 (Space)'>
                 <PlayArrow/>
             </ToggleButton>
             <ToggleButton value={2} title='暂停 (Space)'>
                 <Pause/>
             </ToggleButton>
-        </ToggleButtonGroup>,[layer, playType, record, togglePlayType])}
+        </ToggleButtonGroup>,[canPlay, canRecord, playType, togglePlayType])}
         
         &nbsp;
 
@@ -119,9 +119,9 @@ function TimeLineButtons({playType,togglePlayType,record,layer,setEditorTimestam
         </ToggleButtonGroup>,[runPhysics, setRunPhysics])}
         
         &nbsp;
-
+        {useMemo(()=>
         <ToggleButtonGroup>
-            {useMemo(()=><ToggleButton value={1} title='导入音乐' onClick={()=>{
+            <ToggleButton value={1} title='导入音乐' onClick={()=>{
                 try {
                     const input=document.createElement('input');
                     input.type='file';
@@ -133,9 +133,9 @@ function TimeLineButtons({playType,togglePlayType,record,layer,setEditorTimestam
                     };
                     input.click();
                 }catch {}
-            }}><MusicNote/></ToggleButton>,[setAudioFile])}
+            }}><MusicNote/></ToggleButton>
 
-            {useMemo(()=><ToggleButton value={1} title='导入动作' onClick={()=>{
+            <ToggleButton value={1} title='导入动作' onClick={()=>{
                 try {
                     const input=document.createElement('input');
                     input.type='file';
@@ -150,17 +150,76 @@ function TimeLineButtons({playType,togglePlayType,record,layer,setEditorTimestam
                     };
                     input.click();
                 }catch {}
-            }}><FileOpen/></ToggleButton>,[setRecord])}
-            {useMemo(()=><ToggleButton value={1} title='导出动作' onClick={()=>{
-                const blob = new Blob([JSON.stringify(record)], {type: "text/plain;charset=utf-8"});
+            }}><FileOpen/></ToggleButton>
+            <ToggleButton value={1} title='导出动作' onClick={()=>{
+                const blob = new Blob([JSON.stringify(recordRef.current)], {type: "text/plain;charset=utf-8"});
                 FileSaver.saveAs(blob, "HMSR.json");
-            }} disabled={record?.length===0}><Save/></ToggleButton>,[record])}
-        </ToggleButtonGroup>
+            }} disabled={canPlay}><Save/></ToggleButton>
+        </ToggleButtonGroup>,[canPlay, recordRef, setAudioFile, setRecord])}
         
     </>
 }
 
-function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,setLayer,renderStart,renderEnd}){
+function LayerOptions({layerData,i,recordLength,setRecord,editorTimestampRef,setLayer}){
+    const {l = false, v = true}=layerData;
+    return useMemo(()=><div className='timeline-L-layer-item-options'>
+        {!l && i !== recordLength - 1 ? <ArrowUpward onClick={() => setRecord(record => {
+            [record[i],record[i+1]]=[record[i+1],record[i]]
+            return [...record]
+        })} fontSize={'inherit'}/> : null}
+        {!l && i !== 0 ? <ArrowDownward onClick={() => setRecord(record => {
+            [record[i],record[i-1]]=[record[i-1],record[i]]
+            return [...record]
+        })} fontSize={'inherit'}/> : null}
+        {!l && (v ? <Visibility onClick={() => setRecord(record => {
+            record[i].v = false;
+            return [...record]
+        })} fontSize={'inherit'}/> : <VisibilityOff onClick={() => setRecord(record => {
+            record[i].v = true;
+            return [...record]
+        })} fontSize={'inherit'}/>)}
+        {!l && <CopyAll onClick={e => {
+            setRecord(record => record.reduce((p, o, ii) => ii === i ? [...p, o, JSON.parse(JSON.stringify(o))] : [...p, o], []));
+            e.stopPropagation();
+        }} fontSize={'inherit'}/>}
+        {!l && <ContentCut onClick={e => {
+            setRecord(record => {
+                const layerLeft = record[i].a.filter(o => o.t <= editorTimestampRef.current);
+                const layerRight = record[i].a.filter(o => o.t >= editorTimestampRef.current);
+                if (layerLeft.length === 0 || layerRight.length === 0) return record;
+                return record.reduce((p, o, ii) => ii === i ? [...p, {
+                    ...JSON.parse(JSON.stringify(o)),
+                    a: layerLeft
+                }, {...JSON.parse(JSON.stringify(o)), a: layerRight}] : [...p, o], [])
+            });
+            e.stopPropagation();
+        }} fontSize={'inherit'}/>}
+        {!l && <Timer onClick={e => {
+            setRecord(record => {
+                const delta = +prompt('Dt(ms)', 0) || 0;
+                if (!+delta) return record;
+                record[i].a = record[i].a.map(o => ({...o, t: o.t + delta}));
+                return [...record];
+            });
+            e.stopPropagation();
+        }} fontSize={'inherit'}/>}
+        {!l && <Close onClick={e => {
+            setRecord(record => record.filter((o, ii) => ii !== i));
+            setLayer(undefined);
+            e.stopPropagation();
+        }} fontSize={'inherit'}/>}
+
+        {l ? <Lock onClick={() => setRecord(record => {
+            record[i].l = false;
+            return [...record]
+        })} fontSize={'inherit'}/> : <LockOpen onClick={() => setRecord(record => {
+            record[i].l = true;
+            return [...record]
+        })} fontSize={'inherit'}/>}
+    </div>,[editorTimestampRef, i, l, recordLength, setLayer, setRecord, v]);
+}
+
+function TimeLine({editorTimestamp,editorTimestampRef,setEditorTimestamp,record,setRecord,layer,setLayer,renderStart,renderEnd}){
     const [scale,setScale]=useState(600);
     const [centerOffset,setCenterOffset]=useState(30000);
     const timelineRef=useRef();
@@ -207,7 +266,7 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
             <div className='timeline-L-layer'>
 
                 {record.map((o,i)=> {
-                    const {l = false, v = true, n = `Layer ${i}`} = o;
+                    const {n = `Layer ${i}`} = o;
                     return <div
                         className={'timeline-L-layer-item ' + (i === layer ? 'timeline-L-layer-item-selected' : "")}
                         onClick={() => setLayer(i)}
@@ -218,46 +277,7 @@ function TimeLine({editorTimestamp,setEditorTimestamp,record,setRecord,layer,set
                                 return [...record]
                             })
                         }}>{n}</span>
-                        <div className='timeline-L-layer-item-options'>
-                            {l ? null : <>
-                                {i !== record.length - 1 ? <ArrowUpward onClick={() => setRecord(record => {
-                                    [record[i],record[i+1]]=[record[i+1],record[i]]
-                                    return [...record]
-                                })} fontSize={'inherit'}/> : null}
-                                {i !== 0 ? <ArrowDownward onClick={() => setRecord(record => {
-                                    [record[i],record[i-1]]=[record[i-1],record[i]]
-                                    return [...record]
-                                })} fontSize={'inherit'}/> : null}
-                                {v ? <Visibility onClick={() => setRecord(record => {
-                                    record[i].v = false;
-                                    return [...record]
-                                })} fontSize={'inherit'}/> : <VisibilityOff onClick={() => setRecord(record => {
-                                    record[i].v = true;
-                                    return [...record]
-                                })} fontSize={'inherit'}/>}
-                                <CopyAll onClick={e=>{setRecord(record=>record.reduce((p,o,ii)=>  ii === i ? [...p, o, JSON.parse(JSON.stringify(o))] : [...p, o],[]));e.stopPropagation();}} fontSize={'inherit'}/>
-                                <ContentCut onClick={e=>{setRecord(record=> {
-                                    const layerLeft=record[i].a.filter(o=>o.t<=editorTimestamp);
-                                    const layerRight=record[i].a.filter(o=>o.t>=editorTimestamp);
-                                    if(layerLeft.length===0||layerRight.length===0)return record;
-                                    return record.reduce((p, o, ii) => ii === i ? [...p, {...JSON.parse(JSON.stringify(o)),a:layerLeft}, {...JSON.parse(JSON.stringify(o)),a:layerRight}] : [...p, o], [])
-                                });e.stopPropagation();}} fontSize={'inherit'}/>
-                                <Timer onClick={e=>{setRecord(record=>{
-                                    const delta=+prompt('Dt(ms)',0)||0;
-                                    if(!+delta)return record;
-                                    record[i].a=record[i].a.map(o=>({...o,t:o.t+delta}));
-                                    return [...record];
-                                });e.stopPropagation();}} fontSize={'inherit'}/>
-                                <Close onClick={e=>{setRecord(record=>record.filter((o,ii)=>ii!==i));setLayer(undefined);e.stopPropagation();}} fontSize={'inherit'}/>
-                            </>}
-                            {l ? <Lock onClick={() => setRecord(record => {
-                                record[i].l = false;
-                                return [...record]
-                            })} fontSize={'inherit'}/> : <LockOpen onClick={() => setRecord(record => {
-                                record[i].l = true;
-                                return [...record]
-                            })} fontSize={'inherit'}/>}
-                        </div>
+                        <LayerOptions {...{layerData:o,i,recordLength:record.length,setRecord,editorTimestampRef,setLayer}}/>
                     </div>
                 })}
 
@@ -399,6 +419,11 @@ function App() {
     const [renderEnd,setRenderEnd]=useState(undefined);
     const [renderScale,setRenderScale]=useState(1);
 
+    const editorTimestampRef=useRef(0);
+    useEffect(()=>{editorTimestampRef.current=editorTimestamp},[editorTimestamp]);
+
+    const recordRef=useRef([]);
+    useEffect(()=>{recordRef.current=record},[record]);
 
     const resetMiku=useCallback((rawControl={mouseX:W/2,mouseY:H/2,keyInput:[]})=>{
         latestMousePos.current=[rawControl.mouseX,rawControl.mouseY];
@@ -409,7 +434,7 @@ function App() {
     const parseKeyMapping = (keyList, keyMapping) => keyList.map(o => keyMapping.filter(([k, ...v]) => v.includes(o)).map(([k]) => k))
         .reduce((p, c) => [...p, ...c], []);
 
-    const togglePlayType=useCallback((v,fromTimestamp=editorTimestamp)=> {
+    const togglePlayType=useCallback((v,fromTimestamp=editorTimestampRef.current)=> {
         editorTimestampOnPlay.current=fromTimestamp;
         if (v === -1) {
             // setCurrentFrame(undefined);
@@ -422,12 +447,12 @@ function App() {
         if (v === 1||v===3) {
             if (!record.length)return;
             setEditorTimestamp(fromTimestamp);
-            resetMiku(getRawControl(record,fromTimestamp));
+            resetMiku(getRawControl(recordRef.current,fromTimestamp));
         }
 
         if(audioRef.current) {
             if (v === -1 || v === 1) {
-                audioRef.current.currentTime = editorTimestamp / 1000;
+                audioRef.current.currentTime = fromTimestamp / 1000;
                 audioRef.current.play();
             } else {
                 audioRef.current.pause();
@@ -454,7 +479,8 @@ function App() {
 
         setPlayType(v || 0);
         playTypeChangeTime.current=performance.now();
-    },[editorTimestamp, layer, playType, record, resetMiku]);
+    },[layer, playType, record.length, resetMiku]);
+
 
     useEffect(() => {
         let frametime=0;
@@ -808,8 +834,8 @@ function App() {
                 </Box>,[tabPage])}
 
                 {useMemo(()=>tabPage === 0 && <div className='controls-panel controls-panel-control'>
-                    <TimeLineButtons {...{playType,togglePlayType,record,layer,setEditorTimestamp,resetMiku,runPhysics,setRunPhysics,setAudioFile,setRecord}}/>
-                    <TimeLine {...{editorTimestamp,setEditorTimestamp,record,setRecord,layer,setLayer,renderStart,renderEnd}}/>
+                    <TimeLineButtons {...{playType,togglePlayType,recordRef,canRecord:record[layer]?.l,canPlay:record?.length===0,layer,setEditorTimestamp,resetMiku,runPhysics,setRunPhysics,setAudioFile,setRecord}}/>
+                    <TimeLine {...{editorTimestamp,setEditorTimestamp,editorTimestampRef,record,setRecord,layer,setLayer,renderStart,renderEnd}}/>
                 </div>,[editorTimestamp, layer, playType, record, renderEnd, renderStart, resetMiku, runPhysics, tabPage, togglePlayType])}
                 {tabPage === 1 && <div className='controls-panel'>
                     {Object.entries(control).map(([k, v]) => <div key={k}><b>{k}</b>: {v}</div>)}
