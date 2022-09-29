@@ -72,7 +72,7 @@ export const physicsRotation=(path,offset=0)=>(control,config,physics)=>{
     const dy=selfPos?.y-physics[path]?.py;
     return Math.atan2(dy,dx)/Math.PI*180+90-selfPos.rotation+offset;
 }
-export const physicsScaleY=(path)=>(control,config,physics)=>{
+export const physicsScaleY=(path,ratio=1)=>(control,config,physics)=>{
     const selfPos=getAbsolutePos(config,path);
     const selfConfig=getConfig(config,path);
     if(!selfPos)return undefined;
@@ -80,7 +80,7 @@ export const physicsScaleY=(path)=>(control,config,physics)=>{
     const dx=selfPos?.x-physics[path]?.px;
     const dy=selfPos?.y-physics[path]?.py;
     const ret= Math.sqrt((dx*dx+dy*dy)/(selfConfig.massX*selfConfig.massX+selfConfig.massY*selfConfig.massY));
-    return ret>1?1:ret;
+    return (ret>1?1:ret)*ratio;
 }
 
 export const deepDiff=(base,target)=> {
