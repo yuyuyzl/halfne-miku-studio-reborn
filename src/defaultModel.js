@@ -1,5 +1,5 @@
 // DO NOT COPY THIS LINE
-import {getAbsolutePos, getConfig, physicsRotation, physicsScaleY} from "./Engine/modelUtils";
+import {getAbsolutePos, getConfig, physicsRotation, physicsScaleY, linkedRotation, linkedScaleY} from "./Engine/modelUtils";
 
 // COPY AREA START
 const W = 800;
