@@ -219,7 +219,7 @@ function LayerOptions({layerData,i,recordLength,setRecord,editorTimestampRef,set
     </div>,[editorTimestampRef, i, l, recordLength, setLayer, setRecord, v]);
 }
 
-function TimeLine({editorTimestamp,editorTimestampRef,setEditorTimestamp,record,setRecord,layer,setLayer,renderStart,renderEnd}){
+function TimeLine({editorTimestamp,editorTimestampRef,setEditorTimestamp,record,setRecord,layer,setLayer,renderStart,renderEnd,parseKeyMapping,keyMapping}){
     const [scale,setScale]=useState(600);
     const [centerOffset,setCenterOffset]=useState(30000);
     const timelineRef=useRef();
@@ -360,6 +360,21 @@ function TimeLine({editorTimestamp,editorTimestampRef,setEditorTimestamp,record,
                                     setRecord([...record]);
                                     // selectionDragging.current=true;
                                     // e.stopPropagation();
+                                }}
+                                onDoubleClick={(e)=>{
+                                    if(r.selected){
+                                        setRecord(record=>{
+                                            for (let l of record) {
+                                                for (let c of l.a) {
+                                                    if (c.selected) {
+                                                        c.c.keyInput=parseKeyMapping(window.keyList,keyMapping);
+                                                        console.log(c.c.keyInput);
+                                                    }
+                                                }
+                                            }
+                                            return [...record];
+                                        })
+                                    }
                                 }}
                                 onClick={()=>{
                                     setEditorTimestamp(r.t);
@@ -835,7 +850,7 @@ function App() {
 
                 {useMemo(()=>tabPage === 0 && <div className='controls-panel controls-panel-control'>
                     <TimeLineButtons {...{playType,togglePlayType,recordRef,canRecord:record[layer]?.l,canPlay:record?.length===0,layer,setEditorTimestamp,resetMiku,runPhysics,setRunPhysics,setAudioFile,setRecord}}/>
-                    <TimeLine {...{editorTimestamp,setEditorTimestamp,editorTimestampRef,record,setRecord,layer,setLayer,renderStart,renderEnd}}/>
+                    <TimeLine {...{editorTimestamp,setEditorTimestamp,editorTimestampRef,record,setRecord,layer,setLayer,renderStart,renderEnd,parseKeyMapping,keyMapping}}/>
                 </div>,[editorTimestamp, layer, playType, record, renderEnd, renderStart, resetMiku, runPhysics, tabPage, togglePlayType])}
                 {tabPage === 1 && <div className='controls-panel'>
                     {Object.entries(control).map(([k, v]) => <div key={k}><b>{k}</b>: {v}</div>)}
