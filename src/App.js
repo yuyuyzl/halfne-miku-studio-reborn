@@ -543,12 +543,12 @@ function App() {
                         if(!record?.[layer]?.l)
                             setRecord(record=> {
                                     if(layer===undefined) {
-                                        record.push({a: [{t: editorTimestamp, c: {}}]});
+                                        record.push({a: [{t: editorTimestampRef.current, c: {}}]});
                                         setLayer(record.length-1);
                                     }
                                     else {
-                                        if(record[layer].a.filter(o=>o.t===editorTimestamp).length===0) {
-                                            record[layer].a.push({t: editorTimestamp, c: {}});
+                                        if(record[layer].a.filter(o=>o.t===editorTimestampRef.current).length===0) {
+                                            record[layer].a.push({t: editorTimestampRef.current, c: {}});
                                             record[layer].a = record[layer].a.sort((a, b) => a.t - b.t);
                                         }
                                     }
@@ -563,10 +563,10 @@ function App() {
                         setEditorTimestamp(x=>Math.max(x+100,0));
                         break;
                     case '[':
-                        setRenderStart(Math.min(editorTimestamp,renderEnd||Infinity));
+                        setRenderStart(Math.min(editorTimestampRef.current,renderEnd||Infinity));
                         break;
                     case ']':
-                        setRenderEnd(Math.max(editorTimestamp,renderStart||0));
+                        setRenderEnd(Math.max(editorTimestampRef.current,renderStart||0));
                         break;
                 }
             }
