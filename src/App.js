@@ -353,11 +353,33 @@ function TimeLine({editorTimestamp,editorTimestampRef,setEditorTimestamp,record,
                                 }}
                                 title={JSON.stringify(r.c)}
                                 onMouseDown={(e)=>{
-                                    for (let l of record)
-                                    for (let c of l.a)
-                                        if(c.selected)delete c.selected;
+
                                     if(!l)r.selected=true;
+                                    for (let line of record) {
+                                        let multiSelectStart=false;
+                                        for (let c of line.a) {
+                                            if (c.selected)
+                                                if (e.shiftKey&&!l)
+                                                    multiSelectStart = true;
+                                                else if(c!==r)delete c.selected;
+                                                if (multiSelectStart)c.selected=true;
+                                                if(c===r)multiSelectStart=false;
+                                        }
+                                        if(multiSelectStart){
+                                            let state=0;
+                                            for (let c of line.a) {
+                                                if (c.selected) {
+                                                    if(state===2)delete c.selected;
+                                                    if(state===1)state=2;
+                                                    if(state===0)state=1;
+                                                } else {
+                                                    if(state===1)c.selected=true;
+                                                }
+                                            }
+                                        }
+                                    }
                                     setRecord([...record]);
+                                    console.log(e);
                                     // selectionDragging.current=true;
                                     // e.stopPropagation();
                                 }}
@@ -583,6 +605,40 @@ function App() {
                     case ']':
                         setRenderEnd(Math.max(editorTimestampRef.current,renderStart||0));
                         break;
+                    case 'v':
+                        if(e.ctrlKey){
+                            const s=prompt('Romanji Autofill',window.lastRomanjiInput||'');
+                            if(s===null)return;
+                            console.log(s);
+                            window.lastRomanjiInput=s;
+                            const mouthList=s.replace(/\n/gm,' ').replace(/[^a-z ]/gm,'').split(' ').filter(o=>o).map(o=>({
+                                // tsu:'zi'
+                            })[o]||o).map(o=>({
+                                a:['MouthAA'],
+                                e:['MouthEH'],
+                                i:['MouthEE'],
+                                o:['MouthOH'],
+                                u:['MouthOO'],
+                            })[o[o.length-1]]||['MouthMM']);
+                            console.log(mouthList);
+                            setRecord(record=>{
+                                let k=-1;
+                                for (let l of record) {
+                                    for (let c of l.a) {
+                                        if (c.selected) {
+                                            k=0;
+                                        }
+                                        if(k>=0&&c.c.keyInput?.length){
+                                            c.c.keyInput=mouthList[k];
+                                            k+=1;
+                                            if(k>=mouthList.length)k=-1;
+                                        }
+                                    }
+                                }
+                                return [...record];
+                            })
+                        }
+                        break;
                 }
             }
             e.preventDefault();
@@ -592,7 +648,10 @@ function App() {
 
 
         const keyboardHandler = e => {
-            if (e.type === 'keydown'&&e.key!=='Alt'&&e.key!=='Control'&&e.key!=='Shift') {
+            if (e.type === 'keydown'&&e.key!=='Alt'&&e.key!=='Control'&&e.key!=='Shift'
+                &&!e.ctrlKey
+                &&!e.altKey
+            ) {
                 if (!window.keyList.includes(e.key)) window.keyList.push(e.key);
             } else {
                 window.keyList = window.keyList.filter(o => o !== e.key);
