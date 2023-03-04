@@ -643,8 +643,8 @@ function App() {
                         setRecord(record => {
                                 if (!record?.[layer]?.l) {
                                     if (layer === undefined) {
-                                        record.push({a: [{t: editorTimestampRef.current, c: {}}]});
-                                        setLayer(record.length - 1);
+                                        setLayer(record.length);
+                                        return [...record, {a: [{t: editorTimestampRef.current, c: {}}]}];
                                     } else {
                                         if (record[layer].a.filter(o => o.t === editorTimestampRef.current).length === 0) {
                                             record[layer].a.push({t: editorTimestampRef.current, c: {}});
@@ -705,7 +705,8 @@ function App() {
                                     setRecord(record => {
                                         let time0 = mouthList[0].Start;
                                         const selTime0 = editorTimestampRef.current;
-                                        record.push({
+                                        setLayer(record.length);
+                                        return [...record, {
                                             a: mouthList.map(word => ({
                                                 t: word.Start - time0 + selTime0,
                                                 te: word.End - time0 + selTime0,
@@ -716,9 +717,7 @@ function App() {
                                                         c: {}
                                                     }] : [...p, {t: c.t, c: c.c}]
                                                 , [])
-                                        });
-                                        setLayer(record.length - 1);
-                                        return [...record];
+                                        }];
                                     });
                                 } else setRecord(record => {
                                     for (let l of record) {
