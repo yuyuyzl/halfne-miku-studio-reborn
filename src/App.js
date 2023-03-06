@@ -989,7 +989,7 @@ function App() {
         }
     }, [playType, editorTimestamp, record])
 
-    const handleMouseMove = useCallback((e) => {
+    const handleMouseMove = useCallback((e,stageRect=stageRef.current?.getBoundingClientRect()) => {
         if (e === undefined) {
             if (playType === 2) {
                 setRecord(record => {
@@ -1007,7 +1007,6 @@ function App() {
             return;
         }
         if (playType === 0 || playType === -1) {
-            const stageRect = stageRef.current?.getBoundingClientRect();
             if (!stageRect) return;
             const mouseX = e.clientX - Math.floor(stageRect.x);
             const mouseY = e.clientY - Math.floor(stageRect.y);
@@ -1015,7 +1014,6 @@ function App() {
             latestMousePos.current = [mouseX, mouseY];
         }
         if (playType === 2 && e.buttons) {
-            const stageRect = stageRef.current?.getBoundingClientRect();
             if (!stageRect) return;
             const mouseX = e.clientX - Math.floor(stageRect.x);
             const mouseY = e.clientY - Math.floor(stageRect.y);
@@ -1046,9 +1044,9 @@ function App() {
                         setMouseControlType(1);
                         dmListener = (e) => {
                             handleMouseMove({
-                                clientX: e.gamma / 90 * 800 + 400,
-                                clientY: -e.beta / 90 * 600 + 300
-                            })
+                                clientX: e.gamma / 50 * 400 + 400,
+                                clientY: -e.beta / 50 * 300 + 300
+                            },{x:0,y:0})
                         }
                         window.addEventListener("deviceorientation", dmListener);
                     } else alert(ret)
