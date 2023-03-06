@@ -1,8 +1,8 @@
 {
   "files": {
     "main.css": "/halfne-miku-studio-reborn/static/css/main.6dea0f05.chunk.css",
-    "main.js": "/halfne-miku-studio-reborn/static/js/main.36420d8f.chunk.js",
-    "main.js.map": "/halfne-miku-studio-reborn/static/js/main.36420d8f.chunk.js.map",
+    "main.js": "/halfne-miku-studio-reborn/static/js/main.bd073640.chunk.js",
+    "main.js.map": "/halfne-miku-studio-reborn/static/js/main.bd073640.chunk.js.map",
     "runtime-main.js": "/halfne-miku-studio-reborn/static/js/runtime-main.9516482e.js",
     "runtime-main.js.map": "/halfne-miku-studio-reborn/static/js/runtime-main.9516482e.js.map",
     "static/js/2.832cd7f5.chunk.js": "/halfne-miku-studio-reborn/static/js/2.832cd7f5.chunk.js",
@@ -17,6 +17,6 @@
     "static/js/runtime-main.9516482e.js",
     "static/js/2.832cd7f5.chunk.js",
     "static/css/main.6dea0f05.chunk.css",
-    "static/js/main.36420d8f.chunk.js"
+    "static/js/main.bd073640.chunk.js"
   ]
 }
