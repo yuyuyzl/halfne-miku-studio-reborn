@@ -1,104 +1,122 @@
-
 <!-- saved from url=(0033)https://yal.cc/r/20/devicemotion/ -->
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
-	<title>HTML5 accelerometer/DeviceMotion demo</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-	<style>
-	body {
-		font: 15px sans-serif;
-		height: 100vh;
-		margin: 0;
-		padding: 0;
-		box-sizing: border-box;
-		background: #889EC5;
-		color: white;
-		overflow-x: hidden;
-	}
-	#dm_status, footer {
-		text-align: center;
-		padding: 0.5em;
-	}
-	a, a:visited {
-		color: white;
-		padding: 0 0.5em;
-	}
-	#dm_graphs {
-		width: 100%;
-		height: auto;
-		image-rendering: optimizeSpeed;
-		image-rendering: pixelated;
-		background: rgba(0, 0, 0, 0.7);
-	}
-	</style>
-</head><body>
-	<div id="dm_status">OK!</div>
-	<canvas id="dm_graphs" width="1661" height="120"></canvas>
-	<footer><a href="https://yal.cc/js-device-motion">Related blog post</a></footer>
-	<script>
-	window.addEventListener("error", function(e) {
-		alert(e);
-	});
-	//
-	function requestDeviceMotion(callback) {
-		if (window.DeviceMotionEvent && DeviceMotionEvent.requestPermission) {
-			DeviceMotionEvent.requestPermission().then(function(state) {
-				if (state == "granted") {
-					callback(null);
-				} else callback(new Error("Permission denied by user"));
-			}, function(err) {
-				callback(err);
-			});
-		} else if (window.ondevicemotion !== undefined) {
-			callback(null);
-		} else callback(new Error("DeviceMotion is not supported."));
-	}
-	//
-	var canvas = document.getElementById("dm_graphs");
-	var ctx = canvas.getContext("2d");
-	var graphX = 0;
-	function updateFancyGraphs(e) {
-		var acc = e.acceleration || e.accelerationIncludingGravity;
-		ctx.fillStyle = "white";
-		ctx.fillRect(graphX, 0, 2, canvas.height);
-		ctx.clearRect(graphX, 0, 1, canvas.height);
-		var gh = canvas.height / 3;
-		var gh2 = gh / 2;
-		function drawGraph(val, pos, color) {
-			if (val == null) val = 0;
-			var size = Math.max(-gh2, Math.min(val * 20, gh2));
-			ctx.fillStyle = color;
-			ctx.fillRect(graphX, gh * pos + gh2, 1, size);
-		}
-		drawGraph(acc.x, 0, "red");
-		drawGraph(acc.y, 1, "lime");
-		drawGraph(acc.z, 2, "aqua");
-		graphX = (graphX + 1) % canvas.width;
-	}
-	//
-	function resizeCanvas() {
-		var w = window.innerWidth || document.body.offsetWidth;
-		if (canvas.width != w) canvas.width = w;
-	}
-	window.addEventListener("resize", resizeCanvas);
-	window.addEventListener("deviceorientation", resizeCanvas);
-	resizeCanvas();
-	//
-	function firstClick(e) {
-		var status = document.getElementById("dm_status");
-		if (e) status.innerText = "Requesting...";
-		requestDeviceMotion(function(err) {
-			if (!err) {
-				status.innerText = "OK!";
-				window.removeEventListener("click", firstClick);
-				window.removeEventListener("touchend", firstClick);
-				window.addEventListener("devicemotion", updateFancyGraphs);
-			} else if (e) {
-				status.innerText = "" + err;
-			}
-		}, e);
-	}
-	window.addEventListener("click", firstClick);
-	window.addEventListener("touchend", firstClick);
-	firstClick();
-	</script>
-</body></html>
+<html>
+<head>
+    <meta content="text/html; charset=windows-1252" http-equiv="Content-Type">
+    <title>HTML5 accelerometer/DeviceMotion demo</title>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <style>
+        body {
+            font: 15px sans-serif;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            background: #889EC5;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        #dm_status, footer {
+            text-align: center;
+            padding: 0.5em;
+        }
+
+        a, a:visited {
+            color: white;
+            padding: 0 0.5em;
+        }
+
+        #dm_graphs {
+            width: 100%;
+            height: auto;
+            image-rendering: optimizeSpeed;
+            image-rendering: pixelated;
+            background: rgba(0, 0, 0, 0.7);
+        }
+    </style>
+</head>
+<body>
+<div id="dm_status">OK!</div>
+<canvas height="120" id="dm_graphs" width="1661"></canvas>
+<div id="debug"></div>
+<footer><a href="https://yal.cc/js-device-motion">Related blog post1</a></footer>
+<script>
+    window.addEventListener("error", function (e) {
+        alert(e);
+    });
+
+    //
+    function requestDeviceMotion(callback) {
+        if (window.DeviceMotionEvent && DeviceMotionEvent.requestPermission) {
+            DeviceMotionEvent.requestPermission().then(function (state) {
+                if (state == "granted") {
+                    callback(null);
+                } else callback(new Error("Permission denied by user"));
+            }, function (err) {
+                callback(err);
+            });
+        } else if (window.ondevicemotion !== undefined) {
+            callback(null);
+        } else callback(new Error("DeviceMotion is not supported."));
+    }
+
+    //
+    var canvas = document.getElementById("dm_graphs");
+    var debugDom = document.getElementById("debug");
+    var ctx = canvas.getContext("2d");
+    var graphX = 0;
+
+    function updateFancyGraphs(e) {
+        debugDom.innerHTML = JSON.stringify(e);
+        var acc = e.acceleration || e.accelerationIncludingGravity;
+        ctx.fillStyle = "white";
+        ctx.fillRect(graphX, 0, 2, canvas.height);
+        ctx.clearRect(graphX, 0, 1, canvas.height);
+        var gh = canvas.height / 3;
+        var gh2 = gh / 2;
+
+        function drawGraph(val, pos, color) {
+            if (val == null) val = 0;
+            var size = Math.max(-gh2, Math.min(val * 20, gh2));
+            ctx.fillStyle = color;
+            ctx.fillRect(graphX, gh * pos + gh2, 1, size);
+        }
+
+        drawGraph(acc.x, 0, "red");
+        drawGraph(acc.y, 1, "lime");
+        drawGraph(acc.z, 2, "aqua");
+        graphX = (graphX + 1) % canvas.width;
+    }
+
+    //
+    function resizeCanvas() {
+        var w = window.innerWidth || document.body.offsetWidth;
+        if (canvas.width != w) canvas.width = w;
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    window.addEventListener("deviceorientation", resizeCanvas);
+    resizeCanvas();
+
+    //
+    function firstClick(e) {
+        var status = document.getElementById("dm_status");
+        if (e) status.innerText = "Requesting...";
+        requestDeviceMotion(function (err) {
+            if (!err) {
+                status.innerText = "OK!";
+                window.removeEventListener("click", firstClick);
+                window.removeEventListener("touchend", firstClick);
+                window.addEventListener("devicemotion", updateFancyGraphs);
+            } else if (e) {
+                status.innerText = "" + err;
+            }
+        }, e);
+    }
+
+    window.addEventListener("click", firstClick);
+    window.addEventListener("touchend", firstClick);
+    firstClick();
+</script>
+</body>
+</html>
