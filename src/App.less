@@ -1,7 +1,8 @@
-body{
+body {
   overflow: hidden;
   user-select: none;
 }
+
 .App {
   display: flex;
   width: 100vw;
@@ -12,10 +13,12 @@ body{
   background: #4F4859;
   overflow: hidden;
 }
-.stage{
+
+.stage {
   position: relative;
   overflow: hidden;
-  &-transparent{
+
+  &-transparent {
     position: absolute;
     top: 0;
     right: 0;
@@ -24,7 +27,8 @@ body{
     background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAFyGlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNi4wLWMwMDMgNzkuMTY0NTI3LCAyMDIwLzEwLzE1LTE3OjQ4OjMyICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIiB4bWxuczpzdEV2dD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlRXZlbnQjIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgMjIuMSAoV2luZG93cykiIHhtcDpDcmVhdGVEYXRlPSIyMDIyLTA5LTAzVDIzOjM5OjI2KzA4OjAwIiB4bXA6TWV0YWRhdGFEYXRlPSIyMDIyLTA5LTAzVDIzOjM5OjI2KzA4OjAwIiB4bXA6TW9kaWZ5RGF0ZT0iMjAyMi0wOS0wM1QyMzozOToyNiswODowMCIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDpiODVhMjQ0Mi01YTI0LTIxNDAtYjk4OC0xNzUwYWE2Yzc3MDIiIHhtcE1NOkRvY3VtZW50SUQ9ImFkb2JlOmRvY2lkOnBob3Rvc2hvcDozZTE0NWFhZC00OTI5LWY5NDItYjczMC00Y2UxZTYxOWMyNWMiIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDplNDllZThjNS02MDE4LThjNGEtOGU4MC0yOWFiZDgyOTA5MmIiIGRjOmZvcm1hdD0iaW1hZ2UvcG5nIiBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIj4gPHhtcE1NOkhpc3Rvcnk+IDxyZGY6U2VxPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0iY3JlYXRlZCIgc3RFdnQ6aW5zdGFuY2VJRD0ieG1wLmlpZDplNDllZThjNS02MDE4LThjNGEtOGU4MC0yOWFiZDgyOTA5MmIiIHN0RXZ0OndoZW49IjIwMjItMDktMDNUMjM6Mzk6MjYrMDg6MDAiIHN0RXZ0OnNvZnR3YXJlQWdlbnQ9IkFkb2JlIFBob3Rvc2hvcCAyMi4xIChXaW5kb3dzKSIvPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0ic2F2ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6Yjg1YTI0NDItNWEyNC0yMTQwLWI5ODgtMTc1MGFhNmM3NzAyIiBzdEV2dDp3aGVuPSIyMDIyLTA5LTAzVDIzOjM5OjI2KzA4OjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgMjIuMSAoV2luZG93cykiIHN0RXZ0OmNoYW5nZWQ9Ii8iLz4gPC9yZGY6U2VxPiA8L3htcE1NOkhpc3Rvcnk+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+hQ16yAAAAB1JREFUKBVj+I8DnMEBGEY10EQDLglcBo1qoIkGAITSsJ/w9kIxAAAAAElFTkSuQmCC");
     background-repeat: repeat;
   }
-  &-background{
+
+  &-background {
     position: absolute;
     top: 0;
     right: 0;
@@ -33,29 +37,34 @@ body{
     object-fit: cover;
     pointer-events: none;
   }
-  &-debug{
+
+  &-debug {
     position: absolute;
     top: 0;
     left: 0;
     color: #FFF;
   }
-  &-bottom{
-    height: calc( 100vh - 800px );
+
+  &-bottom {
+    height: calc(100vh - 800px);
   }
 }
-.controls{
+
+.controls {
   position: absolute;
   overflow: hidden;
-  bottom:0;
+  bottom: 0;
   left: 0;
   right: 0;
   background: #FFFFFF;
   border-radius: 8px 8px 0 0;
   z-index: 2;
-  &-panel{
+
+  &-panel {
     padding: 8px;
   }
-  &-panel-control{
+
+  &-panel-control {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
@@ -63,26 +72,30 @@ body{
     justify-content: flex-start;
   }
 }
-.timedisplay{
+
+.timedisplay {
   display: inline;
   cursor: ns-resize;
   font-size: 20px;
   width: 240px;
   text-align: left;
-  .small{
+
+  .small {
     font-size: 16px;
   }
 }
 
-.timeline{
+.timeline {
   width: 100%;
   display: flex;
   flex-direction: row;
-  &-L{
-    width:240px;
+
+  &-L {
+    width: 240px;
     flex-shrink: 0;
     flex-grow: 0;
-    &-toolbar{
+
+    &-toolbar {
       height: 32px;
       display: flex;
       align-items: center;
@@ -90,12 +103,14 @@ body{
       border-bottom: 1px solid #aaa;
       padding-left: 4px;
     }
-    &-layer{
+
+    &-layer {
       position: relative;
       overflow: hidden;
       display: flex;
       flex-direction: column-reverse;
-      &-item{
+
+      &-item {
         width: 100%;
         height: 24px;
         line-height: 24px;
@@ -103,10 +118,12 @@ body{
         display: flex;
         flex-direction: row;
         justify-content: space-between;
-        &-selected{
+
+        &-selected {
           background: #eee;
         }
-        &-options{
+
+        &-options {
           font-size: 16px;
           padding-right: 4px;
           display: flex;
@@ -118,22 +135,26 @@ body{
       }
     }
   }
-  &-R{
+
+  &-R {
     flex: 1;
-    &-time{
+
+    &-time {
       height: 32px;
       position: relative;
       border-bottom: 1px solid #aaa;
-      &-arrow{
+
+      &-arrow {
         height: 0;
         width: 0;
         border: 8px solid transparent;
         border-top: 8px solid #555;
         transform: translateX(-50%) scaleX(0.5);
         position: absolute;
-        bottom:-8px;
+        bottom: -8px;
       }
-      &-mark{
+
+      &-mark {
         height: 6px;
         width: 0;
         border-left: 1px solid #aaa;
@@ -142,7 +163,8 @@ body{
         font-size: 10px;
         line-height: 0;
       }
-      &-render-L{
+
+      &-render-L {
         height: 6px;
         width: 2px;
         border-left: 1px solid #555;
@@ -153,7 +175,8 @@ body{
         font-size: 10px;
         line-height: 0;
       }
-      &-render-R{
+
+      &-render-R {
         height: 6px;
         width: 2px;
         border-right: 1px solid #555;
@@ -165,7 +188,8 @@ body{
         line-height: 0;
         transform: translateX(-3px);
       }
-      &-time{
+
+      &-time {
         position: absolute;
         bottom: 10px;
         font-size: 10px;
@@ -173,16 +197,19 @@ body{
         transform: translateX(-50%);
       }
     }
-    &-content{
+
+    &-content {
       position: relative;
       display: flex;
       flex-direction: column-reverse;
       overflow-x: hidden;
-      &-layer{
+
+      &-layer {
         position: relative;
         width: 100%;
         height: 24px;
-        &-control{
+
+        &-control {
           position: absolute;
           box-sizing: border-box;
           height: 22px;
@@ -197,24 +224,28 @@ body{
           font-size: 12px;
           color: #666;
           overflow: hidden;
-          &-selected{
+
+          &-selected {
             outline: 2px solid #ff5c5c;
-            background: #FFF!important;
+            background: #FFF !important;
             z-index: 1;
           }
-          &-dragger{
+
+          &-dragger {
             cursor: ew-resize;
             background: #666;
             width: 3px;
             height: 22px;
             flex-shrink: 0;
           }
-          &-icon{
-            color: inherit!important;
-            font-size: inherit!important;
+
+          &-icon {
+            color: inherit !important;
+            font-size: inherit !important;
           }
         }
-        &-block{
+
+        &-block {
           box-sizing: border-box;
           position: absolute;
           height: 24px;
@@ -227,13 +258,14 @@ body{
   }
 }
 
-.fps{
+.fps {
   color: #FFFFFF;
   position: absolute;
   top: 0;
   right: 0;
 }
-.mouse{
+
+.mouse {
   //background: #F00;
   position: absolute;
   border-top: 9px solid transparent;
@@ -244,8 +276,18 @@ body{
   z-index: 2;
 }
 
+.App > .control-type {
+  display: none;
+}
+
 @media screen and (max-width: 800px) {
-  .controls,.stage-bottom{
+  .controls, .stage-bottom {
     display: none;
+  }
+
+  .App > .control-type {
+    margin-bottom: 8px;
+    background: #d3d3d3;
+    display: block;
   }
 }

@@ -1035,8 +1035,42 @@ function App() {
         }
     }, [playType])
 
-
+    const controlTypePanel = useMemo(() => <ToggleButtonGroup
+        className={'control-type'}
+        value={mouseControlType}
+        exclusive
+        onChange={(e, v) => {
+            if (v === 1) {
+                requestDeviceMotion((ret) => {
+                    if (!ret) {
+                        setMouseControlType(1);
+                        dmListener = (e) => {
+                            handleMouseMove({
+                                clientX: e.gamma / 90 * 800 + 400,
+                                clientY: -e.beta / 90 * 600 + 300
+                            })
+                        }
+                        window.addEventListener("deviceorientation", dmListener);
+                    } else alert(ret)
+                })
+            } else {
+                dmListener && window.removeEventListener("deviceorientation", dmListener);
+                dmListener = undefined;
+                setMouseControlType(0);
+            }
+        }}
+        label="Mouse Control"
+    >
+        <ToggleButton value={0} aria-label="Touch">
+            Touch
+        </ToggleButton>
+        <ToggleButton value={1} aria-label="Gyroscope">
+            Gyroscope
+        </ToggleButton>
+    </ToggleButtonGroup>, [handleMouseMove, mouseControlType])
     return (<div className="App">
+        {controlTypePanel}
+
         <div
             className="stage"
             style={{width: W + 'px', height: H + 'px', backgroundColor: stageBackground}}
@@ -1328,39 +1362,8 @@ function App() {
                     </ToggleButton>
                 </ToggleButtonGroup>
                 &nbsp;
-                <ToggleButtonGroup
-                    value={mouseControlType}
-                    exclusive
-                    onChange={(e, v) => {
-                        if (v === 1) {
-                            requestDeviceMotion((ret) => {
-                                if (!ret) {
-                                    setMouseControlType(1);
-                                    dmListener = (e) => {
-                                        handleMouseMove({
-                                            clientX: e.gamma / 90 * 800 + 400,
-                                            clientY: e.beta / 90 * 600 + 300
-                                        })
-                                    }
-                                    window.addEventListener("deviceorientation", dmListener);
-                                } else alert(ret)
-                            })
-                        } else {
-                            dmListener && window.removeEventListener("deviceorientation", dmListener);
-                            dmListener = undefined;
-                            setMouseControlType(0);
-                        }
-                    }}
-                    label="Mouse Control"
-                >
-                    <ToggleButton value={0} aria-label="Mouse">
-                        Mouse
-                    </ToggleButton>
-                    <ToggleButton value={1} aria-label="Gyroscope">
-                        Gyroscope
-                    </ToggleButton>
-                </ToggleButtonGroup>
-            </div>, [tabPage, fpsTarget, mouseControlType, resetMiku, handleMouseMove])}
+                {controlTypePanel}
+            </div>, [tabPage, fpsTarget, controlTypePanel, resetMiku])}
         </div>
     </div>);
 }
