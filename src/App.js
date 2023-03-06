@@ -82,6 +82,22 @@ const getRawControl = (record, targetTime) => {
     return newControl;
 }
 
+let dmListener;
+
+function requestDeviceMotion(callback) {
+    if (window.DeviceMotionEvent && DeviceMotionEvent.requestPermission) {
+        DeviceMotionEvent.requestPermission().then(function (state) {
+            if (state == "granted") {
+                callback(null);
+            } else callback(new Error("Permission denied by user"));
+        }, function (err) {
+            callback(err);
+        });
+    } else if (window.ondevicemotion !== undefined) {
+        callback(null);
+    } else callback(new Error("DeviceMotion is not supported."));
+}
+
 function TimeLineButtons({
                              playType,
                              togglePlayType,
@@ -495,6 +511,7 @@ function App() {
     const [keyMapping, setKeyMapping] = useState(config.defaultKeyMapping);
 
     const [fpsTarget, setFpsTarget] = useState(0);
+    const [mouseControlType, setMouseControlType] = useState(0);
     const [renderFps, setRenderFps] = useState(60);
     const [fps, setFps] = useState(0);
 
@@ -1310,7 +1327,40 @@ function App() {
                         120 FPS
                     </ToggleButton>
                 </ToggleButtonGroup>
-            </div>, [fpsTarget, resetMiku, tabPage])}
+                &nbsp;
+                <ToggleButtonGroup
+                    value={mouseControlType}
+                    exclusive
+                    onChange={(e, v) => {
+                        if (v === 1) {
+                            requestDeviceMotion((ret) => {
+                                if (!ret) {
+                                    setMouseControlType(1);
+                                    dmListener = (e) => {
+                                        handleMouseMove({
+                                            clientX: e.gamma / 90 * 800 + 400,
+                                            clientY: e.beta / 90 * 600 + 300
+                                        })
+                                    }
+                                    window.addEventListener("deviceorientation", dmListener);
+                                } else alert(ret)
+                            })
+                        } else {
+                            dmListener && window.removeEventListener("deviceorientation", dmListener);
+                            dmListener = undefined;
+                            setMouseControlType(0);
+                        }
+                    }}
+                    label="Mouse Control"
+                >
+                    <ToggleButton value={0} aria-label="Mouse">
+                        Mouse
+                    </ToggleButton>
+                    <ToggleButton value={1} aria-label="Gyroscope">
+                        Gyroscope
+                    </ToggleButton>
+                </ToggleButtonGroup>
+            </div>, [tabPage, fpsTarget, mouseControlType, resetMiku, handleMouseMove])}
         </div>
     </div>);
 }
