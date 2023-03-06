@@ -39,6 +39,7 @@
 <div id="dm_status">OK!</div>
 <canvas height="120" id="dm_graphs" width="1661"></canvas>
 <div id="debug"></div>
+<div id="debug1"></div>
 <footer><a href="https://yal.cc/js-device-motion">Related blog post1</a></footer>
 <script>
     window.addEventListener("error", function (e) {
@@ -63,11 +64,11 @@
     //
     var canvas = document.getElementById("dm_graphs");
     var debugDom = document.getElementById("debug");
+    var debugDom1 = document.getElementById("debug1");
     var ctx = canvas.getContext("2d");
     var graphX = 0;
 
     function updateFancyGraphs(e) {
-        debugDom.innerHTML = JSON.stringify(e);
         var acc = e.acceleration || e.accelerationIncludingGravity;
         ctx.fillStyle = "white";
         ctx.fillRect(graphX, 0, 2, canvas.height);
@@ -86,6 +87,23 @@
         drawGraph(acc.y, 1, "lime");
         drawGraph(acc.z, 2, "aqua");
         graphX = (graphX + 1) % canvas.width;
+    }
+
+    function logMotion(e) {
+        debugDom.innerHTML = JSON.stringify({
+            acceleration: e.acceleration,
+            accelerationIncludingGravity: e.accelerationIncludingGravity,
+            interval: e.interval,
+            rotationRate: e.rotationRate
+        });
+    }
+
+    function logOrientation(e) {
+        debugDom1.innerHTML = JSON.stringify({
+            alpha: e.alpha,
+            beta: e.beta,
+            gamma: e.gamma
+        });
     }
 
     //
@@ -108,6 +126,8 @@
                 window.removeEventListener("click", firstClick);
                 window.removeEventListener("touchend", firstClick);
                 window.addEventListener("devicemotion", updateFancyGraphs);
+                window.addEventListener("devicemotion", logMotion);
+                window.addEventListener("deviceorientation", logOrientation);
             } else if (e) {
                 status.innerText = "" + err;
             }
