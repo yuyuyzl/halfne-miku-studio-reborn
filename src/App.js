@@ -280,6 +280,13 @@ function TimeLine({
 
     const t2l = useCallback((timestamp) => ((timestamp - centerOffset) / scale + 50), [centerOffset, scale]);
     const l2t = useCallback((left) => centerOffset + (left - 50) * scale, [centerOffset, scale]);
+    const timelineWheel = useCallback((e) => {
+        if (e.ctrlKey) {
+            setScale(x => Math.max(x + e.deltaY, 10))
+        } else {
+            setCenterOffset(x => Math.max(x + e.deltaY * scale / 100, scale * 50))
+        }
+    }, [scale]);
     const rulerScale = [1e2, 2e2, 5e2, 1e3, 2e3, 5e3, 1e4, 2e4, 6e4, 12e4, 3e5, 6e5].reduce((p, c) => p ? p : c >= scale * 5 ? c : 0, 0);
     const marks = (new Array(Math.floor(scale * 100 / rulerScale))).fill(0)
         .map((o, i) => ((Math.ceil(l2t(0) / rulerScale) + i) * rulerScale));
@@ -350,15 +357,14 @@ function TimeLine({
                     </div>
                 , [editorTimestamp, layer, record, setLayer, setRecord])}
         </div>
-        <div className='timeline-R'>
+        <div className='timeline-R'
+             ref={timelineRef}
+        >
 
             {useMemo(() =>
                     <div
-                        ref={timelineRef}
                         className='timeline-R-time'
-                        onWheel={e => {
-                            setScale(x => Math.max(x + e.deltaY, 10))
-                        }}
+                        onWheel={timelineWheel}
                         onClick={handleTimelineMouse}
                         onMouseMove={e => {
                             e.buttons && handleTimelineMouse(e)
@@ -374,15 +380,13 @@ function TimeLine({
                         {(t2l(editorTimestamp) >= 0 && t2l(editorTimestamp) < 100) ?
                             <div className='timeline-R-time-arrow' style={{left: t2l(editorTimestamp) + '%'}}/> : null}
                     </div>
-                , [editorTimestamp, handleTimelineMouse, marks, renderEnd, renderStart, t2l])}
+                , [editorTimestamp, handleTimelineMouse, marks, renderEnd, renderStart, t2l, timelineWheel])}
 
             {useMemo(() =>
                     <div
                         className='timeline-R-content'
                         // onMouseMove={e=>{e.buttons&&handleTimelineMouse(e)}}
-                        onWheel={e => {
-                            setCenterOffset(x => Math.max(x + e.deltaY * scale / 100, scale * 50))
-                        }}
+                        onWheel={timelineWheel}
                         onMouseMove={e => {
                             if (e.buttons && selectionDragging.current) {
                                 const {x, width} = timelineRef.current.getBoundingClientRect();
@@ -492,7 +496,7 @@ function TimeLine({
                         )}
                         <div className='timeline-R-content-layer'/>
                     </div>
-                , [record, scale, l2t, setRecord, t2l, setEditorTimestamp])}
+                , [timelineWheel, record, l2t, setRecord, scale, t2l, parseKeyMapping, keyMapping, setEditorTimestamp])}
         </div>
     </div>
 }
@@ -541,6 +545,17 @@ function App() {
     useEffect(() => {
         recordRef.current = record
     }, [record]);
+
+    const controlsRef = useRef();
+
+    useEffect(() => {
+        const ll = e => e.preventDefault();
+        const el = controlsRef?.current;
+        console.log(el);
+        el?.addEventListener?.('wheel', ll, {passive: false});
+        return () =>
+            el?.removeEventListener?.('wheel', ll, {passive: false});
+    }, [])
 
     const resetMiku = useCallback((rawControl = {mouseX: W / 2, mouseY: H / 2, keyInput: []}) => {
         latestMousePos.current = [rawControl.mouseX, rawControl.mouseY];
@@ -989,7 +1004,7 @@ function App() {
         }
     }, [playType, editorTimestamp, record])
 
-    const handleMouseMove = useCallback((e,stageRect=stageRef.current?.getBoundingClientRect()) => {
+    const handleMouseMove = useCallback((e, stageRect = stageRef.current?.getBoundingClientRect()) => {
         if (e === undefined) {
             if (playType === 2) {
                 setRecord(record => {
@@ -1046,7 +1061,7 @@ function App() {
                             handleMouseMove({
                                 clientX: e.gamma / 50 * 400 + 400,
                                 clientY: -e.beta / 50 * 300 + 300
-                            },{x:0,y:0})
+                            }, {x: 0, y: 0})
                         }
                         window.addEventListener("deviceorientation", dmListener);
                     } else alert(ret)
@@ -1115,7 +1130,7 @@ function App() {
         {playType !== 2 ? <div className='fps'>
             <b>FPS: </b>{Math.round(fps)}
         </div> : null}
-        <div className="controls">
+        <div className="controls" ref={controlsRef}>
             {/*<FormControlLabel control={<Checkbox checked={checked} onChange={e=>setChecked(e.target.checked)}/>} label="Label"/>*/}
             {useMemo(() => <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
                 <Tabs value={tabPage} onChange={(e, v) => setTabPage(v)} aria-label="basic tabs example">
