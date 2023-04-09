@@ -496,7 +496,7 @@ function TimeLine({
                         )}
                         <div className='timeline-R-content-layer'/>
                     </div>
-                , [timelineWheel, record, l2t, setRecord, scale, t2l, parseKeyMapping, keyMapping, setEditorTimestamp])}
+                , [record, scale, l2t, setRecord, t2l, setEditorTimestamp, timelineWheel])}
         </div>
     </div>
 }
