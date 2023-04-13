@@ -282,7 +282,8 @@ function TimeLine({
     const l2t = useCallback((left) => centerOffset + (left - 50) * scale, [centerOffset, scale]);
     const timelineWheel = useCallback((e) => {
         if (e.ctrlKey) {
-            setScale(x => Math.max(x + e.deltaY, 10))
+            console.log(e.deltaY);
+            setScale(x => Math.max(x + x * (10 / (e.deltaY)), 10));
         } else {
             setCenterOffset(x => Math.max(x + e.deltaY * scale / 100, scale * 50))
         }
