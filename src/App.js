@@ -283,14 +283,18 @@ function TimeLine({
     const timelineWheel = useCallback((e) => {
         if (e.ctrlKey) {
             console.log(e.deltaY);
-            setScale(x => Math.max(x + x * (10 / (e.deltaY)), 10));
+            setScale(x => {
+                const a = Math.min(Math.max(x + x * (10 / e.deltaY), 10), 1e5);
+                console.log(a);
+                return a;
+            });
         } else {
             setCenterOffset(x => Math.max(x + e.deltaY * scale / 100, scale * 50))
         }
     }, [scale]);
-    const rulerScale = [1e2, 2e2, 5e2, 1e3, 2e3, 5e3, 1e4, 2e4, 6e4, 12e4, 3e5, 6e5].reduce((p, c) => p ? p : c >= scale * 5 ? c : 0, 0);
-    const marks = (new Array(Math.floor(scale * 100 / rulerScale))).fill(0)
-        .map((o, i) => ((Math.ceil(l2t(0) / rulerScale) + i) * rulerScale));
+    const rulerScale = [1e2, 2e2, 5e2, 1e3, 2e3, 5e3, 1e4, 2e4, 6e4, 12e4, 3e5, 6e5].reduce((p, c) => p ? p : c >= scale * 5 ? c : 0, 0) || 6e5;
+    const marks = rulerScale ? (new Array(Math.floor(scale * 100 / rulerScale))).fill(0)
+        .map((o, i) => ((Math.ceil(l2t(0) / rulerScale) + i) * rulerScale)) : [];
     useEffect(() => {
         if ((editorTimestamp - centerOffset) / scale + 50 < 0) {
             setCenterOffset(Math.max(scale * 50, editorTimestamp - scale * 40))
