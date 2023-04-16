@@ -1143,11 +1143,13 @@ function App() {
         if (remote) {
             let cancelled = false;
             const poll = async () => {
+                let _delay = 5;
                 while (!cancelled) {
-                    await fetch(remote).then(res => res.json()).then(({mouseX, mouseY, keyInput}) => {
+                    await fetch(remote).then(res => res.json()).then(({mouseX, mouseY, keyInput, delay}) => {
                         !cancelled && (latestMousePos.current = [mouseX, mouseY, keyInput]);
+                        _delay = delay;
                     });
-                    await new Promise((resolve) => setTimeout(resolve, 5));
+                    await new Promise((resolve) => setTimeout(resolve, _delay));
                 }
             }
             poll();
