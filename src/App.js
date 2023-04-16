@@ -610,7 +610,7 @@ function App() {
                     ) record[layer].a[i].del = true;
                 })
                 record[layer].a = record[layer].a.filter(o => !o.del);
-                return record;
+                return [...record];
             })
         }
 
