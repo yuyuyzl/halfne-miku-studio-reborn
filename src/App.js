@@ -44,8 +44,10 @@ let waitUntilNextFrame = requestAnimationFrame;
 
 let fpsArr = [];
 
-const isPure = (new URL(window.location.href)).searchParams.get('pure');
-const remote = (new URL(window.location.href)).searchParams.get('remote');
+const query = (new URL(window.location.href)).searchParams
+const isPure = query.get('pure');
+const remote = query.get('remote');
+const model = query.get('model');
 const formatTime = (millis) => Math.floor(millis / 1000 / 60) + ':' + ('00' + Math.floor(millis / 1000 % 60)).slice(-2);
 
 const getRawControl = (record, targetTime) => {
@@ -1157,6 +1159,13 @@ function App() {
                 cancelled = true;
             }
         }
+        if (model) {
+            fetch(model).then(res => res.text()).then(s => {
+                let newConfig = parseModelJS(s);
+                setConfig(newConfig);
+                resetMiku();
+            })
+        }
     }, []);
 
     // Main Play Control
@@ -1390,7 +1399,7 @@ function App() {
         </ToggleButton>
     </ToggleButtonGroup>, [handleMouseMove, mouseControlType])
     return (<div className="App">
-        {controlTypePanel}
+        {!isPure && controlTypePanel}
 
         <div
             className="stage"
@@ -1425,8 +1434,8 @@ function App() {
                 <img className='stage-background' src={stageBackground}/>, [stageBackground])}
             {useMemo(() => <Miku control={control} timestamp={timestamp} model={config.model} runPhysics={runPhysics}
                                  key={mikuResetter}/>, [config.model, control, mikuResetter, runPhysics, timestamp])}
-            {playType !== 1 && <div className={'mouse'} data-html2canvas-ignore={true}
-                                    style={{left: control.mouseX + 'px', top: control.mouseY + 'px'}}/>}
+            {playType !== 1 && !isPure && <div className={'mouse'} data-html2canvas-ignore={true}
+                                               style={{left: control.mouseX + 'px', top: control.mouseY + 'px'}}/>}
             {/*{playType===3?<div className='stage-debug'>{editorTimestamp}</div>:null}*/}
         </div>
         {!isPure && <div className='stage-bottom'/>}
