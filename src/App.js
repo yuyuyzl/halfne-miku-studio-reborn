@@ -1,6 +1,6 @@
 import './App.less';
 import Miku from "./Miku/Miku";
-import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {forwardRef, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {
     Box, Tab, Tabs, ToggleButton, ToggleButtonGroup
 } from "@mui/material";
@@ -44,6 +44,8 @@ let waitUntilNextFrame = requestAnimationFrame;
 
 let fpsArr = [];
 
+const isPure = (new URL(window.location.href)).searchParams.get('pure');
+const remote = (new URL(window.location.href)).searchParams.get('remote');
 const formatTime = (millis) => Math.floor(millis / 1000 / 60) + ':' + ('00' + Math.floor(millis / 1000 % 60)).slice(-2);
 
 const getRawControl = (record, targetTime) => {
@@ -506,6 +508,296 @@ function TimeLine({
     </div>
 }
 
+function Controls({
+                      playType,
+                      togglePlayType,
+                      recordRef,
+                      layer,
+                      setEditorTimestamp,
+                      resetMiku,
+                      runPhysics,
+                      setRunPhysics,
+                      setAudioFile,
+                      setRecord,
+                      record,
+                      setLayer,
+                      renderStart,
+                      renderEnd,
+                      parseKeyMapping,
+                      keyMapping,
+                      setKeyMapping,
+                      editorTimestamp,
+                      editorTimestampRef,
+                      config,
+                      stageBackground,
+                      setStageBackground,
+                      control,
+                      renderFps, setRenderFps, renderScale, setRenderScale,
+                      fpsTarget, setFpsTarget, setConfig, fps, controlTypePanel, stageRef,
+                  }) {
+
+    const controlsRef = useRef();
+    const [tabPage, setTabPage] = useState(0);
+
+    useEffect(() => {
+        const ll = e => e.preventDefault();
+        const el = controlsRef?.current;
+        console.log(el);
+        el?.addEventListener?.('wheel', ll, {passive: false});
+        return () =>
+            el?.removeEventListener?.('wheel', ll, {passive: false});
+    }, [])
+    return (<div className="controls" ref={controlsRef}>
+        {/*<FormControlLabel control={<Checkbox checked={checked} onChange={e=>setChecked(e.target.checked)}/>} label="Label"/>*/}
+        {useMemo(() => <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
+            <Tabs value={tabPage} onChange={(e, v) => setTabPage(v)} aria-label="basic tabs example">
+                <Tab label="Timeline"/>
+                <Tab label="Info"/>
+                <Tab label="Background"/>
+                <Tab label="Render"/>
+                <Tab label="KeyMapping"/>
+                <Tab label="Settings"/>
+            </Tabs>
+        </Box>, [tabPage])}
+
+        {useMemo(() => tabPage === 0 && <div className='controls-panel controls-panel-control'>
+            <TimeLineButtons {...{
+                playType,
+                togglePlayType,
+                recordRef,
+                layer,
+                setEditorTimestamp,
+                resetMiku,
+                runPhysics,
+                setRunPhysics,
+                setAudioFile,
+                setRecord,
+                canRecord: record[layer]?.l,
+                canPlay: record?.length === 0,
+
+            }}/>
+            <TimeLine {...{
+                editorTimestamp,
+                editorTimestampRef,
+                setEditorTimestamp,
+                record,
+                setRecord,
+                layer,
+                setLayer,
+                renderStart,
+                renderEnd,
+                parseKeyMapping,
+                keyMapping
+            }}/>
+        </div>, [editorTimestamp, layer, playType, record, renderEnd, renderStart, resetMiku, runPhysics, tabPage, togglePlayType])}
+        {tabPage === 1 && <div className='controls-panel'>
+            {Object.entries(control).map(([k, v]) => <div key={k}><b>{k}</b>: {v}</div>)}
+        </div>}
+        {useMemo(() => tabPage === 2 && <div className='controls-panel'>
+            <ToggleButtonGroup
+                value={stageBackground}
+                exclusive
+                onChange={(e, v) => setStageBackground(v || false)}
+                label="Background"
+            >
+                <ToggleButton value={false} aria-label="Transparent">
+                    Transparent
+                </ToggleButton>
+                <ToggleButton value={'#FFFFFF'} aria-label="White">
+                    White
+                </ToggleButton>
+                <ToggleButton value={'#0000FF'} aria-label="Blue">
+                    Blue
+                </ToggleButton>
+                <ToggleButton value={'#00FF00'} aria-label="Green">
+                    Green
+                </ToggleButton>
+            </ToggleButtonGroup>
+            &nbsp;
+            <ToggleButtonGroup
+                value={stageBackground}
+                exclusive
+                onChange={(e, v) => setStageBackground(v || false)}
+                label="Background"
+            >
+                {config.background ?
+                    Object.entries(config.background).map(([k, v]) =>
+                        <ToggleButton value={v} aria-label={k} key={k}>
+                            {k}
+                        </ToggleButton>
+                    )
+                    : null}
+            </ToggleButtonGroup>
+        </div>, [config.background, stageBackground, tabPage])}
+        {useMemo(() => tabPage === 3 && <div className='controls-panel controls-panel-control'>
+            <ToggleButtonGroup>
+                <ToggleButton value={1} title='保存当前画面' onClick={() => {
+                    html2canvas(stageRef.current, {
+                        backgroundColor: null,
+                        scale: renderScale
+                    }).then(function (canvas) {
+                        canvas.toBlob(o => FileSaver.saveAs(o, 'HMSR-Render.png'));
+                    });
+                }}><Camera/></ToggleButton>
+            </ToggleButtonGroup>
+            &nbsp;
+            <ToggleButtonGroup
+                value={playType}
+                exclusive
+                onChange={(e, v) => {
+                    playType !== 3 ? togglePlayType(3, renderStart) : togglePlayType(2)
+                }}
+            >
+                <ToggleButton value={3} disabled={record?.length === 0}
+                              title='渲染为PNG序列 (较慢)'><Videocam/></ToggleButton>
+            </ToggleButtonGroup>
+            &nbsp;
+            <ToggleButtonGroup>
+                <ToggleButton value={1} title='保存渲染数据集' onClick={async () => {
+                    let renderControl = config.parseControl(getRawControl(record, renderStart));
+                    let renderPhysics = getInitPhysics(parseConfig(config.model, renderControl));
+                    let renderStates = [];
+                    const totFrame = Math.floor((renderEnd - renderStart) * renderFps / 1000);
+                    let lastReport = 0;
+                    for (let frame = 0; frame <= totFrame; frame++) {
+                        renderControl = config.parseControl({...renderControl, ...getRawControl(record, renderStart + frame * 1000 / renderFps)})
+                        work(frame === 0 ? 0 : (1000 / renderFps),
+                            config.model,
+                            renderControl,
+                            renderPhysics,
+                            p => {
+                                renderPhysics = p
+                            },
+                            r => renderStates.push(frame === 0 ? r : deepDiff(renderStates[0], r)),
+                        )
+                        if (performance.now() - lastReport > 100) {
+                            lastReport = performance.now();
+                            document.querySelector('.rendertime').innerHTML = (100 * frame / totFrame).toFixed(2) + '%';
+                            await new Promise(res => setTimeout(res, 0));
+                        }
+                    }
+                    const outputData = {
+                        fps: renderFps,
+                        background: stageBackground,
+                        scale: renderScale,
+                        renderStates,
+                    }
+                    const blob = new Blob([JSON.stringify(outputData)], {type: "text/plain;charset=utf-8"});
+                    FileSaver.saveAs(blob, "HMSR-Render-Data.json");
+                    document.querySelector('.rendertime').innerHTML = '';
+                    console.log(renderStates);
+                }} disabled={record?.length === 0}><Save/></ToggleButton>
+            </ToggleButtonGroup>
+            &nbsp;
+            <ToggleButtonGroup
+                value={renderFps}
+                exclusive
+                onChange={(e, v) => setRenderFps(v || renderFps)}
+                label="Render FPS"
+            >
+                <ToggleButton value={30} aria-label="30 FPS">
+                    30 FPS
+                </ToggleButton>
+                <ToggleButton value={60} aria-label="60 FPS">
+                    60 FPS
+                </ToggleButton>
+                <ToggleButton value={120} aria-label="120 FPS">
+                    120 FPS
+                </ToggleButton>
+            </ToggleButtonGroup>
+            &nbsp;
+            <ToggleButtonGroup
+                value={renderScale}
+                exclusive
+                onChange={(e, v) => setRenderScale(v || renderScale)}
+                label="Render Scale"
+            >
+                <ToggleButton value={1} aria-label="1">
+                    1x
+                </ToggleButton>
+                <ToggleButton value={1.8} aria-label="2">
+                    1.8x
+                </ToggleButton>
+                <ToggleButton value={2} aria-label="2">
+                    2x
+                </ToggleButton>
+                <ToggleButton value={2.4} aria-label="2">
+                    2.4x
+                </ToggleButton>
+                <ToggleButton value={3} aria-label="3">
+                    3x
+                </ToggleButton>
+            </ToggleButtonGroup>
+            &nbsp;
+            {<div className='timedisplay'>
+                <b className='rendertime'/>
+                {playType === 3 && <>
+                    <b>{Math.floor((editorTimestamp - renderStart) * renderFps / 1000)}/{Math.floor((renderEnd - renderStart) * renderFps / 1000)}</b>
+                    <span
+                        className='small'>&nbsp;{(Math.floor((editorTimestamp - renderStart) * renderFps / 1000) / Math.floor((renderEnd - renderStart) * renderFps / 1000) * 100).toFixed(2)}%</span>
+                    {fps > 0 && <span
+                        className='small'>&nbsp;ETA:{formatTime((renderEnd - editorTimestamp) * renderFps / fps)}</span>}
+                </>}
+            </div>}
+        </div>, [config, editorTimestamp, fps, playType, record, renderEnd, renderFps, renderScale, renderStart, stageBackground, tabPage, togglePlayType])}
+        {useMemo(() => tabPage === 4 && <div className='controls-panel'>
+            {keyMapping.map(([k, ...v], i) => <div key={k}><b onClick={() => {
+                setKeyMapping(_keyMapping => {
+                    _keyMapping[i] = [k, ...window.keyList];
+                    return [..._keyMapping];
+                })
+            }} title={'按住目标按键并单击以修改按键绑定'}>{k}</b>: {v?.length ? v.join(', ') : 'None'}</div>)}
+        </div>, [keyMapping, tabPage])}
+        {useMemo(() => tabPage === 5 && <div className='controls-panel controls-panel-control'>
+            <ToggleButtonGroup>
+                <ToggleButton value={1} title='导入模型' onClick={() => {
+                    try {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.onchange = (e) => {
+                            const fr = new FileReader();
+                            fr.onload = () => {
+                                let newConfig = parseModelJS(fr.result);
+                                setConfig(newConfig);
+                                resetMiku();
+                            };
+                            fr.readAsText(e.target.files[0])
+                        };
+                        input.click();
+                    } catch {
+                    }
+                }}><FileOpen/></ToggleButton>
+            </ToggleButtonGroup>
+
+            &nbsp;
+            <ToggleButtonGroup
+                value={fpsTarget}
+                exclusive
+                onChange={(e, v) => setFpsTarget(v || 0)}
+                label="FPS Limit"
+            >
+                <ToggleButton value={0} aria-label="OFF">
+                    RAF
+                </ToggleButton>
+                <ToggleButton value={Infinity} aria-label="OFF">
+                    Unlimited
+                </ToggleButton>
+                <ToggleButton value={30} aria-label="30 FPS">
+                    30 FPS
+                </ToggleButton>
+                <ToggleButton value={60} aria-label="60 FPS">
+                    60 FPS
+                </ToggleButton>
+                <ToggleButton value={120} aria-label="120 FPS">
+                    120 FPS
+                </ToggleButton>
+            </ToggleButtonGroup>
+            &nbsp;
+            {controlTypePanel}
+        </div>, [tabPage, fpsTarget, controlTypePanel, resetMiku])}
+    </div>)
+}
+
 function App() {
     const stageRef = useRef();
     const latestMousePos = useRef([W / 2, H / 2]);
@@ -523,8 +815,6 @@ function App() {
     const [mouseControlType, setMouseControlType] = useState(0);
     const [renderFps, setRenderFps] = useState(60);
     const [fps, setFps] = useState(0);
-
-    const [tabPage, setTabPage] = useState(0);
 
     const [playType, setPlayType] = useState(0);
     const playTypeChangeTime = useRef();
@@ -550,17 +840,6 @@ function App() {
     useEffect(() => {
         recordRef.current = record
     }, [record]);
-
-    const controlsRef = useRef();
-
-    useEffect(() => {
-        const ll = e => e.preventDefault();
-        const el = controlsRef?.current;
-        console.log(el);
-        el?.addEventListener?.('wheel', ll, {passive: false});
-        return () =>
-            el?.removeEventListener?.('wheel', ll, {passive: false});
-    }, [])
 
     const resetMiku = useCallback((rawControl = {mouseX: W / 2, mouseY: H / 2, keyInput: []}) => {
         latestMousePos.current = [rawControl.mouseX, rawControl.mouseY];
@@ -828,8 +1107,10 @@ function App() {
             }
             e.preventDefault();
         }
-        window.addEventListener('keydown', editorKeyboardHandler);
-        window.addEventListener('keyup', editorKeyboardHandler);
+        if (!isPure) {
+            window.addEventListener('keydown', editorKeyboardHandler);
+            window.addEventListener('keyup', editorKeyboardHandler);
+        }
 
 
         const keyboardHandler = e => {
@@ -848,13 +1129,32 @@ function App() {
         window.addEventListener('keydown', keyboardHandler);
         window.addEventListener('keyup', keyboardHandler);
         return () => {
-            window.removeEventListener('keydown', editorKeyboardHandler);
-            window.removeEventListener('keyup', editorKeyboardHandler);
+            if (!isPure) {
+                window.removeEventListener('keydown', editorKeyboardHandler);
+                window.removeEventListener('keyup', editorKeyboardHandler);
+            }
 
             window.removeEventListener('keydown', keyboardHandler);
             window.removeEventListener('keyup', keyboardHandler);
         }
     }, [keyMapping, layer, playType, renderEnd, renderStart, togglePlayType])
+
+    useEffect(() => {
+        if (remote) {
+            let cancelled = false;
+            const poll = async () => {
+                while (!cancelled) {
+                    await fetch(remote).then(res => res.json()).then(({mouseX, mouseY, keyInput}) => {
+                        !cancelled && (latestMousePos.current = [mouseX, mouseY, keyInput]);
+                    });
+                }
+            }
+            poll();
+            return () => {
+                cancelled = true;
+            }
+        }
+    }, []);
 
     // Main Play Control
     useEffect(() => {
@@ -868,7 +1168,7 @@ function App() {
                 lastTime = timestamp;
                 const x = latestMousePos.current[0];
                 const y = latestMousePos.current[1];
-                const keyInput = parseKeyMapping(window.keyList, keyMapping);
+                const keyInput = latestMousePos.current[2] || parseKeyMapping(window.keyList, keyMapping);
                 setControl(control => {
                     const ratio = Math.min(0.02 * dt, 1);
                     const easeX = control.mouseX * (1 - ratio) + x * ratio;
@@ -1126,263 +1426,42 @@ function App() {
                                     style={{left: control.mouseX + 'px', top: control.mouseY + 'px'}}/>}
             {/*{playType===3?<div className='stage-debug'>{editorTimestamp}</div>:null}*/}
         </div>
-        <div className='stage-bottom'/>
+        {!isPure && <div className='stage-bottom'/>}
         {audioFile ? <audio src={audioFile} ref={audioRef} onLoadedMetadata={e => {
             console.log(audioRef.current);
             setRenderEnd(renderEnd => renderEnd === undefined ? audioRef.current.duration * 1000 : renderEnd);
             setRenderStart(renderStart => renderStart === undefined ? 0 : renderStart);
         }}/> : null}
-        {playType !== 2 ? <div className='fps'>
+        {playType !== 2 && !isPure ? <div className='fps'>
             <b>FPS: </b>{Math.round(fps)}
         </div> : null}
-        <div className="controls" ref={controlsRef}>
-            {/*<FormControlLabel control={<Checkbox checked={checked} onChange={e=>setChecked(e.target.checked)}/>} label="Label"/>*/}
-            {useMemo(() => <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-                <Tabs value={tabPage} onChange={(e, v) => setTabPage(v)} aria-label="basic tabs example">
-                    <Tab label="Timeline"/>
-                    <Tab label="Info"/>
-                    <Tab label="Background"/>
-                    <Tab label="Render"/>
-                    <Tab label="KeyMapping"/>
-                    <Tab label="Settings"/>
-                </Tabs>
-            </Box>, [tabPage])}
-
-            {useMemo(() => tabPage === 0 && <div className='controls-panel controls-panel-control'>
-                <TimeLineButtons {...{
-                    playType,
-                    togglePlayType,
-                    recordRef,
-                    canRecord: record[layer]?.l,
-                    canPlay: record?.length === 0,
-                    layer,
-                    setEditorTimestamp,
-                    resetMiku,
-                    runPhysics,
-                    setRunPhysics,
-                    setAudioFile,
-                    setRecord
-                }}/>
-                <TimeLine {...{
-                    editorTimestamp,
-                    setEditorTimestamp,
-                    editorTimestampRef,
-                    record,
-                    setRecord,
-                    layer,
-                    setLayer,
-                    renderStart,
-                    renderEnd,
-                    parseKeyMapping,
-                    keyMapping
-                }}/>
-            </div>, [editorTimestamp, layer, playType, record, renderEnd, renderStart, resetMiku, runPhysics, tabPage, togglePlayType])}
-            {tabPage === 1 && <div className='controls-panel'>
-                {Object.entries(control).map(([k, v]) => <div key={k}><b>{k}</b>: {v}</div>)}
-            </div>}
-            {useMemo(() => tabPage === 2 && <div className='controls-panel'>
-                <ToggleButtonGroup
-                    value={stageBackground}
-                    exclusive
-                    onChange={(e, v) => setStageBackground(v || false)}
-                    label="Background"
-                >
-                    <ToggleButton value={false} aria-label="Transparent">
-                        Transparent
-                    </ToggleButton>
-                    <ToggleButton value={'#FFFFFF'} aria-label="White">
-                        White
-                    </ToggleButton>
-                    <ToggleButton value={'#0000FF'} aria-label="Blue">
-                        Blue
-                    </ToggleButton>
-                    <ToggleButton value={'#00FF00'} aria-label="Green">
-                        Green
-                    </ToggleButton>
-                </ToggleButtonGroup>
-                &nbsp;
-                <ToggleButtonGroup
-                    value={stageBackground}
-                    exclusive
-                    onChange={(e, v) => setStageBackground(v || false)}
-                    label="Background"
-                >
-                    {config.background ?
-                        Object.entries(config.background).map(([k, v]) =>
-                            <ToggleButton value={v} aria-label={k} key={k}>
-                                {k}
-                            </ToggleButton>
-                        )
-                        : null}
-                </ToggleButtonGroup>
-            </div>, [config.background, stageBackground, tabPage])}
-            {useMemo(() => tabPage === 3 && <div className='controls-panel controls-panel-control'>
-                <ToggleButtonGroup>
-                    <ToggleButton value={1} title='保存当前画面' onClick={() => {
-                        html2canvas(stageRef.current, {
-                            backgroundColor: null,
-                            scale: renderScale
-                        }).then(function (canvas) {
-                            canvas.toBlob(o => FileSaver.saveAs(o, 'HMSR-Render.png'));
-                        });
-                    }}><Camera/></ToggleButton>
-                </ToggleButtonGroup>
-                &nbsp;
-                <ToggleButtonGroup
-                    value={playType}
-                    exclusive
-                    onChange={(e, v) => {
-                        playType !== 3 ? togglePlayType(3, renderStart) : togglePlayType(2)
-                    }}
-                >
-                    <ToggleButton value={3} disabled={record?.length === 0}
-                                  title='渲染为PNG序列 (较慢)'><Videocam/></ToggleButton>
-                </ToggleButtonGroup>
-                &nbsp;
-                <ToggleButtonGroup>
-                    <ToggleButton value={1} title='保存渲染数据集' onClick={async () => {
-                        let renderControl = config.parseControl(getRawControl(record, renderStart));
-                        let renderPhysics = getInitPhysics(parseConfig(config.model, renderControl));
-                        let renderStates = [];
-                        const totFrame = Math.floor((renderEnd - renderStart) * renderFps / 1000);
-                        let lastReport = 0;
-                        for (let frame = 0; frame <= totFrame; frame++) {
-                            renderControl = config.parseControl({...renderControl, ...getRawControl(record, renderStart + frame * 1000 / renderFps)})
-                            work(frame === 0 ? 0 : (1000 / renderFps),
-                                config.model,
-                                renderControl,
-                                renderPhysics,
-                                p => {
-                                    renderPhysics = p
-                                },
-                                r => renderStates.push(frame === 0 ? r : deepDiff(renderStates[0], r)),
-                            )
-                            if (performance.now() - lastReport > 100) {
-                                lastReport = performance.now();
-                                document.querySelector('.rendertime').innerHTML = (100 * frame / totFrame).toFixed(2) + '%';
-                                await new Promise(res => setTimeout(res, 0));
-                            }
-                        }
-                        const outputData = {
-                            fps: renderFps,
-                            background: stageBackground,
-                            scale: renderScale,
-                            renderStates,
-                        }
-                        const blob = new Blob([JSON.stringify(outputData)], {type: "text/plain;charset=utf-8"});
-                        FileSaver.saveAs(blob, "HMSR-Render-Data.json");
-                        document.querySelector('.rendertime').innerHTML = '';
-                        console.log(renderStates);
-                    }} disabled={record?.length === 0}><Save/></ToggleButton>
-                </ToggleButtonGroup>
-                &nbsp;
-                <ToggleButtonGroup
-                    value={renderFps}
-                    exclusive
-                    onChange={(e, v) => setRenderFps(v || renderFps)}
-                    label="Render FPS"
-                >
-                    <ToggleButton value={30} aria-label="30 FPS">
-                        30 FPS
-                    </ToggleButton>
-                    <ToggleButton value={60} aria-label="60 FPS">
-                        60 FPS
-                    </ToggleButton>
-                    <ToggleButton value={120} aria-label="120 FPS">
-                        120 FPS
-                    </ToggleButton>
-                </ToggleButtonGroup>
-                &nbsp;
-                <ToggleButtonGroup
-                    value={renderScale}
-                    exclusive
-                    onChange={(e, v) => setRenderScale(v || renderScale)}
-                    label="Render Scale"
-                >
-                    <ToggleButton value={1} aria-label="1">
-                        1x
-                    </ToggleButton>
-                    <ToggleButton value={1.8} aria-label="2">
-                        1.8x
-                    </ToggleButton>
-                    <ToggleButton value={2} aria-label="2">
-                        2x
-                    </ToggleButton>
-                    <ToggleButton value={2.4} aria-label="2">
-                        2.4x
-                    </ToggleButton>
-                    <ToggleButton value={3} aria-label="3">
-                        3x
-                    </ToggleButton>
-                </ToggleButtonGroup>
-                &nbsp;
-                {<div className='timedisplay'>
-                    <b className='rendertime'/>
-                    {playType === 3 && <>
-                        <b>{Math.floor((editorTimestamp - renderStart) * renderFps / 1000)}/{Math.floor((renderEnd - renderStart) * renderFps / 1000)}</b>
-                        <span
-                            className='small'>&nbsp;{(Math.floor((editorTimestamp - renderStart) * renderFps / 1000) / Math.floor((renderEnd - renderStart) * renderFps / 1000) * 100).toFixed(2)}%</span>
-                        {fps > 0 && <span
-                            className='small'>&nbsp;ETA:{formatTime((renderEnd - editorTimestamp) * renderFps / fps)}</span>}
-                    </>}
-                </div>}
-            </div>, [config, editorTimestamp, fps, playType, record, renderEnd, renderFps, renderScale, renderStart, stageBackground, tabPage, togglePlayType])}
-            {useMemo(() => tabPage === 4 && <div className='controls-panel'>
-                {keyMapping.map(([k, ...v], i) => <div key={k}><b onClick={() => {
-                    setKeyMapping(_keyMapping => {
-                        _keyMapping[i] = [k, ...window.keyList];
-                        return [..._keyMapping];
-                    })
-                }} title={'按住目标按键并单击以修改按键绑定'}>{k}</b>: {v?.length ? v.join(', ') : 'None'}</div>)}
-            </div>, [keyMapping, tabPage])}
-            {useMemo(() => tabPage === 5 && <div className='controls-panel controls-panel-control'>
-                <ToggleButtonGroup>
-                    <ToggleButton value={1} title='导入模型' onClick={() => {
-                        try {
-                            const input = document.createElement('input');
-                            input.type = 'file';
-                            input.onchange = (e) => {
-                                const fr = new FileReader();
-                                fr.onload = () => {
-                                    let newConfig = parseModelJS(fr.result);
-                                    setConfig(newConfig);
-                                    resetMiku();
-                                };
-                                fr.readAsText(e.target.files[0])
-                            };
-                            input.click();
-                        } catch {
-                        }
-                    }}><FileOpen/></ToggleButton>
-                </ToggleButtonGroup>
-
-                &nbsp;
-                <ToggleButtonGroup
-                    value={fpsTarget}
-                    exclusive
-                    onChange={(e, v) => setFpsTarget(v || 0)}
-                    label="FPS Limit"
-                >
-                    <ToggleButton value={0} aria-label="OFF">
-                        RAF
-                    </ToggleButton>
-                    <ToggleButton value={Infinity} aria-label="OFF">
-                        Unlimited
-                    </ToggleButton>
-                    <ToggleButton value={30} aria-label="30 FPS">
-                        30 FPS
-                    </ToggleButton>
-                    <ToggleButton value={60} aria-label="60 FPS">
-                        60 FPS
-                    </ToggleButton>
-                    <ToggleButton value={120} aria-label="120 FPS">
-                        120 FPS
-                    </ToggleButton>
-                </ToggleButtonGroup>
-                &nbsp;
-                {controlTypePanel}
-            </div>, [tabPage, fpsTarget, controlTypePanel, resetMiku])}
-        </div>
+        {!isPure && <Controls {...{
+            playType,
+            togglePlayType,
+            recordRef,
+            layer,
+            setEditorTimestamp,
+            resetMiku,
+            runPhysics,
+            setRunPhysics,
+            setAudioFile,
+            setRecord,
+            record,
+            setLayer,
+            renderStart,
+            renderEnd,
+            parseKeyMapping,
+            keyMapping,
+            setKeyMapping,
+            editorTimestamp,
+            editorTimestampRef,
+            config,
+            stageBackground,
+            setStageBackground,
+            control,
+            renderFps, setRenderFps, renderScale, setRenderScale,
+            fpsTarget, setFpsTarget, setConfig, fps, controlTypePanel, stageRef,
+        }}/>}
     </div>);
 }
 
