@@ -1147,6 +1147,7 @@ function App() {
                     await fetch(remote).then(res => res.json()).then(({mouseX, mouseY, keyInput}) => {
                         !cancelled && (latestMousePos.current = [mouseX, mouseY, keyInput]);
                     });
+                    await new Promise((resolve) => setTimeout(resolve, 5));
                 }
             }
             poll();
