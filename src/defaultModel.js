@@ -25,7 +25,7 @@ const mikuConfig = () => ({
     defaultKeyMapping: [['EyeHappy', '1'], ['EyeJaded', '2'], ['EyeO_O', '3'], ['Eye*_*', '4'], ['Eye@_@', '5'], ['EyeSideGlance', '6'], ['EyeEheh', '7'], ['EyePumped', '8'], ['EyeBlink', 'x'], ['MouthAA', 'a'], ['MouthEE', 'd'], ['MouthOO', 'w'], ['MouthEH', 's'], ['MouthOH', 'e'], ['MouthTeeth', 'q'], ['MouthHappy', 'F1'], ['MouthNeutral', 'F2'], ['MouthCat', 'F3'], ['MouthAngry', 'F4'], ['MouthPout', 'F5'], ['MouthDrool', 'F6'], ['MouthDuck', 'F7'], ['MouthTongue', 'F8'],],
     parseControl: (_control = {}) => {
         let control = {
-            mouseX: 400, mouseY: 300, mouthType: "happy", mouth: 1, eyeType: "happy", eyeOpen: 'o', keyInput: [],
+            mouseX: W / 2, mouseY: H / 2, mouthType: "happy", mouth: 1, eyeType: "happy", eyeOpen: 'o', keyInput: [],
             ..._control,
         };
 
