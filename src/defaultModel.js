@@ -141,8 +141,6 @@ const mikuConfig = () => ({
             id: 'tailL',
             x: (control, config) => getAbsolutePos(config, 'head.tailL')?.x,
             y: (control, config) => getAbsolutePos(config, 'head.tailL')?.y,
-            width: 800,
-            height: 600,
             resourceCenterX: 400,
             resourceCenterY: 300,
             gravityX: 0,

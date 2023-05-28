@@ -1,8 +1,17 @@
-import {physicsScaleY,physicsRotation,getConfig,getAbsolutePos,rotateVec,toAbsolute,toRelative} from "./modelUtils";
-export const parseConfig= (o,control,physics={})=> {
-    const root=o;
-    let modified=false;
-    let remain=false;
+import {
+    physicsScaleY,
+    physicsRotation,
+    getConfig,
+    getAbsolutePos,
+    rotateVec,
+    toAbsolute,
+    toRelative
+} from "./modelUtils";
+
+export const parseConfig = (o, control, physics = {}) => {
+    const root = o;
+    let modified = false;
+    let remain = false;
     const _parseConfig = (o) => {
         return Object.fromEntries(Object.entries(o).map(([k, v]) => {
             switch (typeof v) {
@@ -14,12 +23,11 @@ export const parseConfig= (o,control,physics={})=> {
                     }
                 case "function": {
                     const result = v(control, root, physics);
-                    if (result !== undefined&&typeof result!=='function') {
-                        modified=true;
+                    if (result !== undefined && typeof result !== 'function') {
+                        modified = true;
                         return [k, result];
-                    }
-                    else {
-                        remain=true;
+                    } else {
+                        remain = true;
                         //console.log("remain",o,root);
                         return [k, v];
                     }
@@ -29,40 +37,40 @@ export const parseConfig= (o,control,physics={})=> {
             }
         }))
     }
-    const parsed=_parseConfig(o);
-    if(remain){
+    const parsed = _parseConfig(o);
+    if (remain) {
         // eslint-disable-next-line no-throw-literal
-        if(!modified)throw "Infinite Loop In Config File";
-        else return parseConfig(parsed,control,physics);
-    }else return parsed;
+        if (!modified) throw "Infinite Loop In Config File";
+        else return parseConfig(parsed, control, physics);
+    } else return parsed;
 }
 
-export const getInitPhysics=(config0,stablize=true)=>{
-    let physics={};
-    const collectPhysicsComponent=(config,currentPath)=>{
-        if(config.massX!==undefined&&config.massY!==undefined){
-            const absPos=getAbsolutePos(config0,currentPath);
-            const p=toAbsolute(config.massX,config.massY,absPos);// const p=toAbsolute(config.massX,config.massY,absPos);
-            physics[currentPath]={
-                    px:p.x,
-                    py:p.y,
-                    vx:0,
-                    vy:0,
-                }
+export const getInitPhysics = (config0, stablize = true) => {
+    let physics = {};
+    const collectPhysicsComponent = (config, currentPath) => {
+        if (config.massX !== undefined && config.massY !== undefined) {
+            const absPos = getAbsolutePos(config0, currentPath);
+            const p = toAbsolute(config.massX, config.massY, absPos);// const p=toAbsolute(config.massX,config.massY,absPos);
+            physics[currentPath] = {
+                px: p.x,
+                py: p.y,
+                vx: 0,
+                vy: 0,
+            }
         }
-        config.components?.forEach(o=>{
-            collectPhysicsComponent(o,(currentPath?currentPath+'.':'')+o.id);
+        config.components?.forEach(o => {
+            collectPhysicsComponent(o, (currentPath ? currentPath + '.' : '') + o.id);
         });
     }
     collectPhysicsComponent(config0);
-    if(stablize)
-        for (let i=0;i<100;i++){
-            physics=updatePhysics(physics,config0,50);
+    if (stablize)
+        for (let i = 0; i < 100; i++) {
+            physics = updatePhysics(physics, config0, 50);
         }
     return physics;
 }
 
-export const updatePhysics=(physics,root,dt)=> {
+export const updatePhysics = (physics, root, dt) => {
     let newPhysics = physics;
     Object.entries(physics).forEach(([currentPath, phy]) => {
         const config = getConfig(root, currentPath);
@@ -135,11 +143,11 @@ export const updatePhysics=(physics,root,dt)=> {
     return newPhysics;
 }
 
-export const work=(dt,model,control,physics,setPhysics,setRenderState,runPhysics=true)=> {
+export const work = (dt, model, control, physics, setPhysics, setRenderState, runPhysics = true) => {
     const shouldResetPhysics = (dt > 200 || dt < 0 || !runPhysics);
-    let _physics=physics;
+    let _physics = physics;
     if (shouldResetPhysics) {
-        _physics=getInitPhysics(parseConfig(model, control), true);
+        _physics = getInitPhysics(parseConfig(model, control), true);
         setPhysics(_physics);
     }
     let currentRenderState = parseConfig(model, control, _physics);
