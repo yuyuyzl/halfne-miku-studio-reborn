@@ -1,5 +1,4 @@
 const mikuConfig = () => ({
-    parseControl: o => o,
     model: {
         id: 'root', x: 0, y: 0,
         components: [{
