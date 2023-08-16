@@ -853,6 +853,7 @@ function App() {
         .reduce((p, c) => [...p, ...c], []);
 
     const togglePlayType = useCallback((v, fromTimestamp = editorTimestampRef.current) => {
+        if (v === -1 && record[layer]?.l) return;
         editorTimestampOnPlay.current = fromTimestamp;
         if (v === -1) {
             // setCurrentFrame(undefined);
