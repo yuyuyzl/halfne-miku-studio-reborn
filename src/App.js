@@ -1004,7 +1004,7 @@ function App() {
                                             timeToStart += word?.tags?.[0]?.k * 10
                                         word.End = timeToStart;
                                         return word;
-                                    }).filter(word => word.text);
+                                    }).filter(word => word.text && word.tags[0].k);
                                 }).reduce((p, c) => [...p, ...c])
                                     .map(word => ({
                                         ...word,
