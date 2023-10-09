@@ -858,10 +858,6 @@ function App() {
         if (v === -1) {
             // setCurrentFrame(undefined);
             if (layer === undefined) setLayer(record.length)
-            else setRecord(record => {
-                record[layer] = {a: []}
-                return record;
-            })
         }
         if (v === 1 || v === 3) {
             if (!record.length) return;
