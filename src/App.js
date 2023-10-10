@@ -1287,14 +1287,28 @@ function App() {
             // debugger;
             setRecord(record => {
                     if (!record[layer]) record[layer] = {a: []};
-                    record[layer].a.push({
-                        t: record[layer].a.length === 0 ? editorTimestampOnPlay.current : timestamp - playTypeChangeTime.current + editorTimestampOnPlay.current,
-                        c: {
-                            mouseX: latestMouseDown.current ? mouseX : undefined,
-                            mouseY: latestMouseDown.current ? mouseY : undefined,
-                            keyInput: keyInput?.length ? keyInput : undefined
-                        },
-                    });
+                    const i = record[layer].a.length - 1;
+                    const con = {
+                        mouseX: latestMouseDown.current ? mouseX : undefined,
+                        mouseY: latestMouseDown.current ? mouseY : undefined,
+                        keyInput: keyInput?.length ? keyInput : undefined
+                    }
+                    if (
+                        i > 0 &&
+                        (con.mouseX === record[layer].a[i].c.mouseX) &&
+                        (con.mouseX === record[layer].a[i - 1].c.mouseX) &&
+                        (con.mouseY === record[layer].a[i].c.mouseY) &&
+                        (con.mouseY === record[layer].a[i - 1].c.mouseY) &&
+                        (record[layer].a[i].c.keyInput?.join('||') === record[layer].a[i - 1].c.keyInput?.join('||'))
+                    ) record[layer].a[i] = {
+                        t: timestamp - playTypeChangeTime.current + editorTimestampOnPlay.current,
+                        c: con,
+                    };
+                    else
+                        record[layer].a.push({
+                            t: timestamp - playTypeChangeTime.current + editorTimestampOnPlay.current,
+                            c: con,
+                        });
                     return [...record];
                 }
             )
