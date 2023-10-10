@@ -1183,9 +1183,11 @@ function App() {
                     const easeX = control.mouseX * (1 - ratio) + x * ratio;
                     const easeY = control.mouseY * (1 - ratio) + y * ratio;
                     const distance = Math.sqrt((easeX - control.mouseX) * (easeX - control.mouseX) + (easeY - control.mouseY) * (easeY - control.mouseY))
-                    const rawControl = (distance < 1) ?
-                        {mouseX: x, mouseY: y, keyInput: keyInput} :
-                        {mouseX: easeX.toFixed(1), mouseY: easeY.toFixed(1), keyInput: keyInput};
+                    const rawControl =
+                        (x === undefined || y === undefined) ?
+                            {keyInput: keyInput} : (distance < 1) ?
+                                {mouseX: x, mouseY: y, keyInput: keyInput} :
+                                {mouseX: easeX.toFixed(1), mouseY: easeY.toFixed(1), keyInput: keyInput};
                     return config.parseControl({...control, ...rawControl, timestamp});
                 })
                 setTimestamp(timestamp);
