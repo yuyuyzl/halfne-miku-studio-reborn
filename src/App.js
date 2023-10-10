@@ -410,7 +410,7 @@ function TimeLine({
                                                     c.t = newTS;
                                                 }
                                             }
-                                            if (shouldSort) l = l.a.sort((a, b) => a.t - b.t);
+                                            if (shouldSort) l.a = l.a.sort((a, b) => a.t - b.t);
                                         }
                                         return [...record];
                                     }
@@ -888,6 +888,7 @@ function App() {
                     ) record[layer].a[i].del = true;
                 })
                 record[layer].a = record[layer].a.filter(o => !o.del);
+                record[layer].a = record[layer].a.sort((a, b) => a.t - b.t);
                 return [...record];
             })
         }
