@@ -1119,8 +1119,41 @@ function App() {
                 && !e.altKey
             ) {
                 if (!window.keyList.includes(e.key)) window.keyList.push(e.key);
+                if(window.keyList[0]==='Enter'){
+                    setRecord(record => {
+                        for (let l of record) {
+                            for (let c of l.a) {
+                                if (c.selected) {
+                                    c.c.keyInput = parseKeyMapping(window.keyList.slice(1), keyMapping);
+                                    console.log(c.c.keyInput);
+                                }
+                            }
+                        }
+                        return [...record];
+                    })
+                }
             } else {
                 window.keyList = window.keyList.filter(o => o !== e.key);
+                if(window.keyList[0]==='Enter'&&window.keyList.length===1){
+                    setRecord(record => {
+                        for (let line of record) {
+                            let orig
+                            for (let c of line.a) {
+                                if (c.selected) {
+                                    orig=c;
+                                } else {
+                                    if (orig&&c.c.keyInput) {
+                                        c.selected = true;
+                                        delete orig.selected;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        return [...record];
+                    })
+
+                }
             }
             e.preventDefault();
             console.log(window.keyList);
