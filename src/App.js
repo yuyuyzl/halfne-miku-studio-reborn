@@ -421,15 +421,18 @@ function TimeLine({
                             selectionDragging.current = false;
                         }}
                     >
-                        {record.map(({a: o = [], l = false}, i) =>
-                            <div className='timeline-R-content-layer'>
-                                {(scale >= 100 && o.length) ? <div className='timeline-R-content-layer-block'
-                                                                   style={{
-                                                                       left: t2l(o[0].t) + '%',
-                                                                       right: 'calc( ' + (100 - t2l(o[o.length - 1].t)) + '% - 1px '
-                                                                   }}>
+                        {record.map(({a: o = [], l = false}, i) => {
+                            let renderNodes = o.filter((r, i, a) => t2l(r.t) >= 0 && t2l(r.t) < 100);
+                            renderNodes = [o[o.indexOf(renderNodes[0]) - 1], ...renderNodes, o[o.indexOf(renderNodes[renderNodes.length - 1]) + 1]].filter(o => o);
+                            const shouldSimplify = renderNodes.length > 50 && scale >= 50;
+                            return (<div className='timeline-R-content-layer'>
+                                {(shouldSimplify && o.length) ? <div className='timeline-R-content-layer-block'
+                                                                     style={{
+                                                                         left: t2l(o[0].t) + '%',
+                                                                         right: 'calc( ' + (100 - t2l(o[o.length - 1].t)) + '% - 1px '
+                                                                     }}>
                                 </div> : null}
-                                {scale < 100 ? o.map((r, i) => (t2l(r.t) >= 0 && t2l(r.t) < 100) ?
+                                {!shouldSimplify ? renderNodes.map((r, i, o) =>
                                     <div
                                         className={'timeline-R-content-layer-control' + (r.selected ? ' timeline-R-content-layer-control-selected' : '')}
                                         style={{
@@ -500,9 +503,9 @@ function TimeLine({
                                         {r.c.keyInput !== undefined ? r.c.keyInput.map(s => <div
                                             className='timeline-R-content-layer-control-key'>&nbsp;{s.replace(/[a-z ]/g, '')}</div>) : null}
                                     </div>
-                                    : null) : null}
-                            </div>
-                        )}
+                                ) : null}
+                            </div>)
+                        })}
                         <div className='timeline-R-content-layer'/>
                     </div>
                 , [record, scale, l2t, setRecord, t2l, setEditorTimestamp, timelineWheel])}
@@ -917,16 +920,42 @@ function App() {
     }, [fpsTarget]);
 
     useEffect(() => {
+        const gotoNode = (next = true) => {
+            let timetarget;
+            setRecord(record => {
+                for (let line of record) {
+                    let orig;
+                    for (let i = next ? 0 : line.a.length - 1; next ? (i < line.a.length) : i >= 0; next ? i++ : i--) {
+                        let c = line.a[i];
+                        if (c.selected) {
+                            orig = c;
+                        } else {
+                            if (orig && c.c.keyInput) {
+                                c.selected = true;
+                                timetarget = c.t;
+                                delete orig.selected;
+                                break;
+                            }
+                        }
+                    }
+                }
+                return [...record];
+            })
+            if (timetarget) setEditorTimestamp(timetarget);
+
+        }
         const editorKeyboardHandler = e => {
             if (e.type === 'keydown') {
                 console.log(e);
                 switch (e.key) {
                     case ' ':
-                        if (playType === 0 || playType === 2) {
-                            if (e.shiftKey) togglePlayType(-1);
-                            else togglePlayType(1);
-                        } else {
-                            togglePlayType(2);
+                        if (window.keyList[0] !== 'Enter') {
+                            if (playType === 0 || playType === 2) {
+                                if (e.shiftKey) togglePlayType(-1);
+                                else togglePlayType(1);
+                            } else {
+                                togglePlayType(2);
+                            }
                         }
                         break;
                     case 'Escape':
@@ -977,6 +1006,12 @@ function App() {
                         break;
                     case 'ArrowRight':
                         setEditorTimestamp(x => Math.max(x + 100, 0));
+                        break;
+                    case 'ArrowUp':
+                        gotoNode(false);
+                        break;
+                    case 'ArrowDown':
+                        gotoNode(true);
                         break;
                     case '[':
                         setRenderStart(Math.min(editorTimestampRef.current, renderEnd || Infinity));
@@ -1119,7 +1154,7 @@ function App() {
                 && !e.altKey
             ) {
                 if (!window.keyList.includes(e.key)) window.keyList.push(e.key);
-                if(window.keyList[0]==='Enter'){
+                if (window.keyList[0] === 'Enter') {
                     setRecord(record => {
                         for (let l of record) {
                             for (let c of l.a) {
@@ -1134,24 +1169,8 @@ function App() {
                 }
             } else {
                 window.keyList = window.keyList.filter(o => o !== e.key);
-                if(window.keyList[0]==='Enter'&&window.keyList.length===1){
-                    setRecord(record => {
-                        for (let line of record) {
-                            let orig
-                            for (let c of line.a) {
-                                if (c.selected) {
-                                    orig=c;
-                                } else {
-                                    if (orig&&c.c.keyInput) {
-                                        c.selected = true;
-                                        delete orig.selected;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        return [...record];
-                    })
+                if (window.keyList[0] === 'Enter' && window.keyList.length === 1) {
+                    gotoNode();
 
                 }
             }
