@@ -429,7 +429,8 @@ function TimeLine({
                                 {(shouldSimplify && o.length) ? <div className='timeline-R-content-layer-block'
                                                                      style={{
                                                                          left: t2l(o[0].t) + '%',
-                                                                         right: 'calc( ' + (100 - t2l(o[o.length - 1].t)) + '% - 1px '
+                                                                         right: 'calc( ' + (100 - t2l(o[o.length - 1].t)) + '% - 1px ',
+                                                                         background: o.some(r=>r.c.mouseX) ? '#efe' : o.some(r=>r.c.keyInput) ? '#eef' : undefined,
                                                                      }}>
                                 </div> : null}
                                 {!shouldSimplify ? renderNodes.map((r, i, o) =>
