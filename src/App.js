@@ -410,7 +410,7 @@ function TimeLine({
                                                     c.t = newTS;
                                                 }
                                             }
-                                            if (shouldSort) l = l.a.sort((a, b) => a.t - b.t);
+                                            if (shouldSort) l.a = l.a.sort((a, b) => a.t - b.t);
                                         }
                                         return [...record];
                                     }
@@ -421,15 +421,19 @@ function TimeLine({
                             selectionDragging.current = false;
                         }}
                     >
-                        {record.map(({a: o = [], l = false}, i) =>
-                            <div className='timeline-R-content-layer'>
-                                {(scale >= 100 && o.length) ? <div className='timeline-R-content-layer-block'
-                                                                   style={{
-                                                                       left: t2l(o[0].t) + '%',
-                                                                       right: 'calc( ' + (100 - t2l(o[o.length - 1].t)) + '% - 1px '
-                                                                   }}>
+                        {record.map(({a: o = [], l = false}, i) => {
+                            let renderNodes = o.filter((r, i, a) => t2l(r.t) >= 0 && t2l(r.t) < 100);
+                            renderNodes = [o[o.indexOf(renderNodes[0]) - 1], ...renderNodes, o[o.indexOf(renderNodes[renderNodes.length - 1]) + 1]].filter(o => o);
+                            const shouldSimplify = renderNodes.length > 50 && scale >= 50;
+                            return (<div className='timeline-R-content-layer'>
+                                {(shouldSimplify && o.length) ? <div className='timeline-R-content-layer-block'
+                                                                     style={{
+                                                                         left: t2l(o[0].t) + '%',
+                                                                         right: 'calc( ' + (100 - t2l(o[o.length - 1].t)) + '% - 1px ',
+                                                                         background: o.some(r=>r.c.mouseX) ? '#efe' : o.some(r=>r.c.keyInput) ? '#eef' : undefined,
+                                                                     }}>
                                 </div> : null}
-                                {scale < 100 ? o.map((r, i) => (t2l(r.t) >= 0 && t2l(r.t) < 100) ?
+                                {!shouldSimplify ? renderNodes.map((r, i, o) =>
                                     <div
                                         className={'timeline-R-content-layer-control' + (r.selected ? ' timeline-R-content-layer-control-selected' : '')}
                                         style={{
@@ -500,9 +504,9 @@ function TimeLine({
                                         {r.c.keyInput !== undefined ? r.c.keyInput.map(s => <div
                                             className='timeline-R-content-layer-control-key'>&nbsp;{s.replace(/[a-z ]/g, '')}</div>) : null}
                                     </div>
-                                    : null) : null}
-                            </div>
-                        )}
+                                ) : null}
+                            </div>)
+                        })}
                         <div className='timeline-R-content-layer'/>
                     </div>
                 , [record, scale, l2t, setRecord, t2l, setEditorTimestamp, timelineWheel])}
@@ -858,10 +862,6 @@ function App() {
         if (v === -1) {
             // setCurrentFrame(undefined);
             if (layer === undefined) setLayer(record.length)
-            else setRecord(record => {
-                record[layer] = {a: []}
-                return record;
-            })
         }
         if (v === 1 || v === 3) {
             if (!record.length) return;
@@ -892,6 +892,7 @@ function App() {
                     ) record[layer].a[i].del = true;
                 })
                 record[layer].a = record[layer].a.filter(o => !o.del);
+                record[layer].a = record[layer].a.sort((a, b) => a.t - b.t);
                 return [...record];
             })
         }
@@ -920,16 +921,42 @@ function App() {
     }, [fpsTarget]);
 
     useEffect(() => {
+        const gotoNode = (next = true) => {
+            let timetarget;
+            setRecord(record => {
+                for (let line of record) {
+                    let orig;
+                    for (let i = next ? 0 : line.a.length - 1; next ? (i < line.a.length) : i >= 0; next ? i++ : i--) {
+                        let c = line.a[i];
+                        if (c.selected) {
+                            orig = c;
+                        } else {
+                            if (orig && c.c.keyInput) {
+                                c.selected = true;
+                                timetarget = c.t;
+                                delete orig.selected;
+                                break;
+                            }
+                        }
+                    }
+                }
+                return [...record];
+            })
+            if (timetarget) setEditorTimestamp(timetarget);
+
+        }
         const editorKeyboardHandler = e => {
             if (e.type === 'keydown') {
                 console.log(e);
                 switch (e.key) {
                     case ' ':
-                        if (playType === 0 || playType === 2) {
-                            if (e.shiftKey) togglePlayType(-1);
-                            else togglePlayType(1);
-                        } else {
-                            togglePlayType(2);
+                        if (window.keyList[0] !== 'Enter') {
+                            if (playType === 0 || playType === 2) {
+                                if (e.shiftKey) togglePlayType(-1);
+                                else togglePlayType(1);
+                            } else {
+                                togglePlayType(2);
+                            }
                         }
                         break;
                     case 'Escape':
@@ -980,6 +1007,12 @@ function App() {
                         break;
                     case 'ArrowRight':
                         setEditorTimestamp(x => Math.max(x + 100, 0));
+                        break;
+                    case 'ArrowUp':
+                        gotoNode(false);
+                        break;
+                    case 'ArrowDown':
+                        gotoNode(true);
                         break;
                     case '[':
                         setRenderStart(Math.min(editorTimestampRef.current, renderEnd || Infinity));
@@ -1122,8 +1155,25 @@ function App() {
                 && !e.altKey
             ) {
                 if (!window.keyList.includes(e.key)) window.keyList.push(e.key);
+                if (window.keyList[0] === 'Enter') {
+                    setRecord(record => {
+                        for (let l of record) {
+                            for (let c of l.a) {
+                                if (c.selected) {
+                                    c.c.keyInput = parseKeyMapping(window.keyList.slice(1), keyMapping);
+                                    console.log(c.c.keyInput);
+                                }
+                            }
+                        }
+                        return [...record];
+                    })
+                }
             } else {
                 window.keyList = window.keyList.filter(o => o !== e.key);
+                if (window.keyList[0] === 'Enter' && window.keyList.length === 1) {
+                    gotoNode();
+
+                }
             }
             e.preventDefault();
             console.log(window.keyList);
@@ -1191,9 +1241,11 @@ function App() {
                     const easeX = control.mouseX * (1 - ratio) + x * ratio;
                     const easeY = control.mouseY * (1 - ratio) + y * ratio;
                     const distance = Math.sqrt((easeX - control.mouseX) * (easeX - control.mouseX) + (easeY - control.mouseY) * (easeY - control.mouseY))
-                    const rawControl = (distance < 1) ?
-                        {mouseX: x, mouseY: y, keyInput: keyInput} :
-                        {mouseX: easeX.toFixed(1), mouseY: easeY.toFixed(1), keyInput: keyInput};
+                    const rawControl =
+                        (x === undefined || y === undefined) ?
+                            {keyInput: keyInput} : (distance < 1) ?
+                                {mouseX: x, mouseY: y, keyInput: keyInput} :
+                                {mouseX: easeX.toFixed(1), mouseY: easeY.toFixed(1), keyInput: keyInput};
                     return config.parseControl({...control, ...rawControl, timestamp});
                 })
                 setTimestamp(timestamp);
@@ -1295,14 +1347,28 @@ function App() {
             // debugger;
             setRecord(record => {
                     if (!record[layer]) record[layer] = {a: []};
-                    record[layer].a.push({
-                        t: record[layer].a.length === 0 ? editorTimestampOnPlay.current : timestamp - playTypeChangeTime.current + editorTimestampOnPlay.current,
-                        c: {
-                            mouseX: latestMouseDown.current ? mouseX : undefined,
-                            mouseY: latestMouseDown.current ? mouseY : undefined,
-                            keyInput: keyInput?.length ? keyInput : undefined
-                        },
-                    });
+                    const i = record[layer].a.length - 1;
+                    const con = {
+                        mouseX: latestMouseDown.current ? mouseX : undefined,
+                        mouseY: latestMouseDown.current ? mouseY : undefined,
+                        keyInput: keyInput?.length ? keyInput : undefined
+                    }
+                    if (
+                        i > 0 &&
+                        (con.mouseX === record[layer].a[i].c.mouseX) &&
+                        (con.mouseX === record[layer].a[i - 1].c.mouseX) &&
+                        (con.mouseY === record[layer].a[i].c.mouseY) &&
+                        (con.mouseY === record[layer].a[i - 1].c.mouseY) &&
+                        (record[layer].a[i].c.keyInput?.join('||') === record[layer].a[i - 1].c.keyInput?.join('||'))
+                    ) record[layer].a[i] = {
+                        t: timestamp - playTypeChangeTime.current + editorTimestampOnPlay.current,
+                        c: con,
+                    };
+                    else
+                        record[layer].a.push({
+                            t: timestamp - playTypeChangeTime.current + editorTimestampOnPlay.current,
+                            c: con,
+                        });
                     return [...record];
                 }
             )
