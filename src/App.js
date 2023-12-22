@@ -33,6 +33,7 @@ import defaultConfig from './defaultModel'
 import {deepDiff, parseModelJS} from "./Engine/modelUtils";
 import html2canvas from "html2canvas";
 import JSZip from "jszip";
+import Animated_GIF from './Animated_GIF';
 import {getInitPhysics, parseConfig, work} from "./Engine/core";
 import * as asscompiler from "ass-compiler";
 import japanese from "japanese";
@@ -113,7 +114,9 @@ function TimeLineButtons({
                              runPhysics,
                              setRunPhysics,
                              setAudioFile,
-                             setRecord
+                             setRecord,
+                             playSpeed,
+                             setPlaySpeed
                          }) {
     return <>
         {useMemo(() => <ToggleButtonGroup
@@ -146,6 +149,24 @@ function TimeLineButtons({
             }} title='前进'><FastForward/></ToggleButton>
         </ToggleButtonGroup>, [setEditorTimestamp])}
 
+        &nbsp;
+
+
+        {useMemo(() => <ToggleButtonGroup
+            value={playSpeed}
+            exclusive
+            onChange={(e, v) => setPlaySpeed(v)}
+        >
+            <ToggleButton value={0.5} disabled={playType === 1 || playType === -1} title='0.5x'>
+                0.5x
+            </ToggleButton>
+            <ToggleButton value={0.75} disabled={playType === 1 || playType === -1} title='0.75x'>
+                0.75x
+            </ToggleButton>
+            <ToggleButton value={1} disabled={playType === 1 || playType === -1} title='1x'>
+                1x
+            </ToggleButton>
+        </ToggleButtonGroup>, [playSpeed, playType, setPlaySpeed])}
         &nbsp;
 
         {useMemo(() => <ToggleButtonGroup>
@@ -430,7 +451,7 @@ function TimeLine({
                                                                      style={{
                                                                          left: t2l(o[0].t) + '%',
                                                                          right: 'calc( ' + (100 - t2l(o[o.length - 1].t)) + '% - 1px ',
-                                                                         background: o.some(r=>r.c.mouseX) ? '#efe' : o.some(r=>r.c.keyInput) ? '#eef' : undefined,
+                                                                         background: o.some(r => r.c.mouseX) ? '#efe' : o.some(r => r.c.keyInput) ? '#eef' : undefined,
                                                                      }}>
                                 </div> : null}
                                 {!shouldSimplify ? renderNodes.map((r, i, o) =>
@@ -538,8 +559,8 @@ function Controls({
                       stageBackground,
                       setStageBackground,
                       control,
-                      renderFps, setRenderFps, renderScale, setRenderScale,
-                      fpsTarget, setFpsTarget, setConfig, fps, controlTypePanel, stageRef,
+                      renderFps, setRenderFps, renderScale, setRenderScale, renderTarget, setRenderTarget,
+                      fpsTarget, setFpsTarget, setConfig, fps, controlTypePanel, stageRef, playSpeed, setPlaySpeed
                   }) {
 
     const controlsRef = useRef();
@@ -580,7 +601,8 @@ function Controls({
                 setRecord,
                 canRecord: record[layer]?.l,
                 canPlay: record?.length === 0,
-
+                playSpeed,
+                setPlaySpeed
             }}/>
             <TimeLine {...{
                 editorTimestamp,
@@ -595,9 +617,11 @@ function Controls({
                 parseKeyMapping,
                 keyMapping
             }}/>
-        </div>, [editorTimestamp, layer, playType, record, renderEnd, renderStart, resetMiku, runPhysics, tabPage, togglePlayType])}
+        </div>, [editorTimestamp, editorTimestampRef, keyMapping, layer, parseKeyMapping, playSpeed, playType, record, recordRef, renderEnd, renderStart, resetMiku, runPhysics, setAudioFile, setEditorTimestamp, setLayer, setPlaySpeed, setRecord, setRunPhysics, tabPage, togglePlayType])}
         {tabPage === 1 && <div className='controls-panel'>
-            {Object.entries(control).map(([k, v]) => <div key={k}><b>{k}</b>: {v}</div>)}
+            {Object.entries(control).map(([k, v]) => {
+                return <div key={k}><b>{k}</b>: {typeof v === 'object' ? JSON.stringify(v) : v}</div>
+            })}
         </div>}
         {useMemo(() => tabPage === 2 && <div className='controls-panel'>
             <ToggleButtonGroup
@@ -648,14 +672,19 @@ function Controls({
             </ToggleButtonGroup>
             &nbsp;
             <ToggleButtonGroup
-                value={playType}
+                value={playType === 3 ? renderTarget : ''}
                 exclusive
                 onChange={(e, v) => {
-                    playType !== 3 ? togglePlayType(3, renderStart) : togglePlayType(2)
+                    if (playType !== 3) {
+                        setRenderTarget(v);
+                        togglePlayType(3, renderStart);
+                    } else togglePlayType(2)
                 }}
             >
-                <ToggleButton value={3} disabled={record?.length === 0}
+                <ToggleButton value={'ZIP'} disabled={record?.length === 0}
                               title='渲染为PNG序列 (较慢)'><Videocam/></ToggleButton>
+                <ToggleButton value={'GIF'} disabled={record?.length === 0}
+                              title='渲染为GIF动图'><Videocam/></ToggleButton>
             </ToggleButtonGroup>
             &nbsp;
             <ToggleButtonGroup>
@@ -823,6 +852,7 @@ function App() {
     const [fps, setFps] = useState(0);
 
     const [playType, setPlayType] = useState(0);
+    const [playSpeed, setPlaySpeed] = useState(1);
     const playTypeChangeTime = useRef();
     // const [currentFrame,setCurrentFrame]=useState();
     const [record, setRecord] = useState([]);
@@ -836,6 +866,7 @@ function App() {
     const [renderStart, setRenderStart] = useState(undefined);
     const [renderEnd, setRenderEnd] = useState(undefined);
     const [renderScale, setRenderScale] = useState(1);
+    const [renderTarget, setRenderTarget] = useState();
 
     const editorTimestampRef = useRef(0);
     useEffect(() => {
@@ -1102,7 +1133,7 @@ function App() {
                                                     k = StartK;
                                                 console.log('apply', c.t, mouthList[k]?.text, mouthList[k]?.romanji, StartK - CenterK)
                                                 c.c.keyInput = mouthList[k].keyInput;
-                                                c.c.debug = {d: StartK - CenterK}
+                                                // c.c.debug = {d: StartK - CenterK}
                                             }
                                         }
                                         console.log(l);
@@ -1214,6 +1245,10 @@ function App() {
                 cancelled = true;
             }
         }
+    }, []);
+
+    useEffect(() => {
+
         if (model) {
             fetch(model).then(res => res.text()).then(s => {
                 let newConfig = parseModelJS(s);
@@ -1261,7 +1296,7 @@ function App() {
             console.log(record);
             const updateControl = (timestamp = performance.now()) => {
                 if (canceled) return;
-                const targetTime = timestamp - playTypeChangeTime.current + editorTimestampOnPlay.current;
+                const targetTime = (timestamp - playTypeChangeTime.current) * playSpeed + editorTimestampOnPlay.current;
                 setEditorTimestamp(targetTime);
                 setTimestamp(targetTime);
                 waitUntilNextFrame(updateControl);
@@ -1275,6 +1310,9 @@ function App() {
             let canceled = false;
             console.log(record);
             let zip = new JSZip();
+            const ag = new Animated_GIF({repeat: 0, disposal: 2, transparent: true});
+            ag.setSize(800 * renderScale, 600 * renderScale);
+            ag.setDelay(1000 / renderFps);
             let partCount = 0;
             let size = 0;
             const updateControl = (currentFrame) => {
@@ -1301,41 +1339,52 @@ function App() {
                             el.remove();
                         }
                     })
-                    canvas.toBlob(o => {
-                        size += o.size;
-                        if (size > 1024 * 1024 * 1024) {
-                            const currentPartCount = partCount;
-                            partCount++;
-                            zip.generateAsync({type: 'blob'}).then(o => {
-                                    FileSaver.saveAs(o, `HMSR-Render-part${currentPartCount}.zip`);
-                                }
-                            )
-                            zip = new JSZip();
-                            size = 0;
-                        }
-                        console.log(o.size);
-                        zip.file(`HMSR-Render-${('00000' + currentFrame).slice(-5)}.png`, o);
-                        // console.log(performance.memory.totalJSHeapSize/performance.memory.jsHeapSizeLimit);
-                        // FileSaver.saveAs(o, `HMSR-Render-${('00000'+currentFrame).slice(-5)}.png`);
-                        // console.log(o);
-                        const targetTime = (currentFrame + 1) * 1000 / renderFps + editorTimestampOnPlay.current;
-                        if (targetTime <= renderEnd) {
-                            setEditorTimestamp(targetTime);
-                            setTimestamp(targetTime);
-                            setTimeout(() => updateControl(currentFrame + 1));
-                        } else {
-                            togglePlayType(2);
-                        }
-                    });
+                    if (renderTarget === 'ZIP') {
+                        canvas.toBlob(o => {
+                            size += o.size;
+                            if (size > 1024 * 1024 * 1024) {
+                                const currentPartCount = partCount;
+                                partCount++;
+                                zip.generateAsync({type: 'blob'}).then(o => {
+                                        FileSaver.saveAs(o, `HMSR-Render-part${currentPartCount}.zip`);
+                                    }
+                                )
+                                zip = new JSZip();
+                                size = 0;
+                            }
+                            console.log(o.size);
+                            zip.file(`HMSR-Render-${('00000' + currentFrame).slice(-5)}.png`, o);
+                            console.log(performance.memory.totalJSHeapSize / performance.memory.jsHeapSizeLimit);
+                            // FileSaver.saveAs(o, `HMSR-Render-${('00000' + currentFrame).slice(-5)}.png`);
+                            console.log(o);
 
+                        });
+                    } else {
+                        ag.addFrameImageData(canvas.getContext('2d').getImageData(0, 0, 800 * renderScale, 600 * renderScale))
+                    }
+                    const targetTime = (currentFrame + 1) * 1000 / renderFps + editorTimestampOnPlay.current;
+                    if (targetTime <= renderEnd) {
+                        setEditorTimestamp(targetTime);
+                        setTimestamp(targetTime);
+                        setTimeout(() => updateControl(currentFrame + 1));
+                    } else {
+                        togglePlayType(2);
+                    }
                 });
             }
             setTimeout(() => updateControl(0));
             return () => {
                 canceled = true;
-                zip.generateAsync({type: 'blob'}).then(o =>
-                    FileSaver.saveAs(o, partCount === 0 ? 'HMSR-Render.zip' : `HMSR-Render-part${partCount}.zip`)
-                )
+                if (renderTarget === 'ZIP') {
+
+                    zip.generateAsync({type: 'blob'}).then(o =>
+                        FileSaver.saveAs(o, partCount === 0 ? 'HMSR-Render.zip' : `HMSR-Render-part${partCount}.zip`)
+                    )
+                } else {
+
+                    ag.getBlobGIF(o =>
+                        FileSaver.saveAs(o, partCount === 0 ? 'HMSR-Render.gif' : `HMSR-Render-part${partCount}.gif`))
+                }
             }
         }
     }, [playType]);
@@ -1361,20 +1410,24 @@ function App() {
                         (con.mouseY === record[layer].a[i - 1].c.mouseY) &&
                         (record[layer].a[i].c.keyInput?.join('||') === record[layer].a[i - 1].c.keyInput?.join('||'))
                     ) record[layer].a[i] = {
-                        t: timestamp - playTypeChangeTime.current + editorTimestampOnPlay.current,
+                        t: (timestamp - playTypeChangeTime.current) * playSpeed + editorTimestampOnPlay.current,
                         c: con,
                     };
                     else
                         record[layer].a.push({
-                            t: timestamp - playTypeChangeTime.current + editorTimestampOnPlay.current,
+                            t: (timestamp - playTypeChangeTime.current) * playSpeed + editorTimestampOnPlay.current,
                             c: con,
                         });
                     return [...record];
                 }
             )
-            setEditorTimestamp(timestamp - playTypeChangeTime.current + editorTimestampOnPlay.current);
+            setEditorTimestamp((timestamp - playTypeChangeTime.current) * playSpeed + editorTimestampOnPlay.current);
         }
-    }, [control, layer, playType]);
+    }, [control, layer, playSpeed, playType]);
+
+    useEffect(() => {
+        if (audioRef.current) audioRef.current.playbackRate = playSpeed;
+    }, [playSpeed])
 
     // Editor Timestamp to Control Data
     useEffect(() => {
@@ -1514,6 +1567,7 @@ function App() {
             console.log(audioRef.current);
             setRenderEnd(renderEnd => renderEnd === undefined ? audioRef.current.duration * 1000 : renderEnd);
             setRenderStart(renderStart => renderStart === undefined ? 0 : renderStart);
+            audioRef.current.playbackRate = playSpeed;
         }}/> : null}
         {playType !== 2 && !isPure ? <div className='fps'>
             <b>FPS: </b>{Math.round(fps)}
@@ -1542,8 +1596,8 @@ function App() {
             stageBackground,
             setStageBackground,
             control,
-            renderFps, setRenderFps, renderScale, setRenderScale,
-            fpsTarget, setFpsTarget, setConfig, fps, controlTypePanel, stageRef,
+            renderFps, setRenderFps, renderScale, setRenderScale, renderTarget, setRenderTarget,
+            fpsTarget, setFpsTarget, setConfig, fps, controlTypePanel, stageRef, playSpeed, setPlaySpeed
         }}/>}
     </div>);
 }
