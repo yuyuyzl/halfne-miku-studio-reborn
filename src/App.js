@@ -50,6 +50,8 @@ const isPure = query.get('pure');
 const remote = query.get('remote');
 const model = query.get('model');
 const formatTime = (millis) => Math.floor(millis / 1000 / 60) + ':' + ('00' + Math.floor(millis / 1000 % 60)).slice(-2);
+const parseKeyMapping = (keyList, keyMapping) => keyList.map(o => keyMapping.filter(([k, ...v]) => v.includes(o)).map(([k]) => k))
+    .reduce((p, c) => [...p, ...c], []);
 
 const getRawControl = (record, targetTime) => {
     const layerControls = record.map(layer => {
@@ -295,8 +297,8 @@ function TimeLine({
                       setLayer,
                       renderStart,
                       renderEnd,
-                      parseKeyMapping,
-                      keyMapping
+                      keyMapping,
+                      playType
                   }) {
     const [scale, setScale] = useState(600);
     const [centerOffset, setCenterOffset] = useState(30000);
@@ -445,7 +447,7 @@ function TimeLine({
                         {record.map(({a: o = [], l = false}, i) => {
                             let renderNodes = o.filter((r, i, a) => t2l(r.t) >= 0 && t2l(r.t) < 100);
                             renderNodes = [o[o.indexOf(renderNodes[0]) - 1], ...renderNodes, o[o.indexOf(renderNodes[renderNodes.length - 1]) + 1]].filter(o => o);
-                            const shouldSimplify = renderNodes.length > 50 && scale >= 50;
+                            const shouldSimplify = playType === -1 || (renderNodes.length > 100 && scale >= 100);
                             return (<div className='timeline-R-content-layer'>
                                 {(shouldSimplify && o.length) ? <div className='timeline-R-content-layer-block'
                                                                      style={{
@@ -530,7 +532,7 @@ function TimeLine({
                         })}
                         <div className='timeline-R-content-layer'/>
                     </div>
-                , [record, scale, l2t, setRecord, t2l, setEditorTimestamp, timelineWheel])}
+                , [timelineWheel, record, l2t, setRecord, playType, scale, t2l, keyMapping, setEditorTimestamp])}
         </div>
     </div>
 }
@@ -550,7 +552,6 @@ function Controls({
                       setLayer,
                       renderStart,
                       renderEnd,
-                      parseKeyMapping,
                       keyMapping,
                       setKeyMapping,
                       editorTimestamp,
@@ -614,10 +615,10 @@ function Controls({
                 setLayer,
                 renderStart,
                 renderEnd,
-                parseKeyMapping,
-                keyMapping
+                keyMapping,
+                playType
             }}/>
-        </div>, [editorTimestamp, editorTimestampRef, keyMapping, layer, parseKeyMapping, playSpeed, playType, record, recordRef, renderEnd, renderStart, resetMiku, runPhysics, setAudioFile, setEditorTimestamp, setLayer, setPlaySpeed, setRecord, setRunPhysics, tabPage, togglePlayType])}
+        </div>, [editorTimestamp, editorTimestampRef, keyMapping, layer, playSpeed, playType, record, recordRef, renderEnd, renderStart, resetMiku, runPhysics, setAudioFile, setEditorTimestamp, setLayer, setPlaySpeed, setRecord, setRunPhysics, tabPage, togglePlayType])}
         {tabPage === 1 && <div className='controls-panel'>
             {Object.entries(control).map(([k, v]) => {
                 return <div key={k}><b>{k}</b>: {typeof v === 'object' ? JSON.stringify(v) : v}</div>
@@ -883,9 +884,6 @@ function App() {
         setControl(config.parseControl(rawControl));
         setMikuResetter(i => i + 1);
     }, [config])
-
-    const parseKeyMapping = (keyList, keyMapping) => keyList.map(o => keyMapping.filter(([k, ...v]) => v.includes(o)).map(([k]) => k))
-        .reduce((p, c) => [...p, ...c], []);
 
     const togglePlayType = useCallback((v, fromTimestamp = editorTimestampRef.current) => {
         if (v === -1 && record[layer]?.l) return;
@@ -1588,7 +1586,6 @@ function App() {
             setLayer,
             renderStart,
             renderEnd,
-            parseKeyMapping,
             keyMapping,
             setKeyMapping,
             editorTimestamp,
