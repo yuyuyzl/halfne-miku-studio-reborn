@@ -1393,7 +1393,6 @@ function App() {
     useEffect(() => {
         if (playType === -1) {
             const {mouseX, mouseY, timestamp, keyInput} = control;
-            // debugger;
             setRecord(record => {
                     if (!record[layer]) record[layer] = {a: []};
                     const i = record[layer].a.length - 1;
