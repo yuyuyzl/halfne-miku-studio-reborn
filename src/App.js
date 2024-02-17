@@ -889,13 +889,15 @@ function App() {
 
     const togglePlayType = useCallback((v, fromTimestamp = editorTimestampRef.current) => {
         if (v === -1 && record[layer]?.l) return;
+        if (v === 1 || v === 3)
+            if (!record.length) return;
         editorTimestampOnPlay.current = fromTimestamp;
+        playTypeChangeTime.current = performance.now();
         if (v === -1) {
             // setCurrentFrame(undefined);
             if (layer === undefined) setLayer(record.length)
         }
         if (v === 1 || v === 3) {
-            if (!record.length) return;
             setEditorTimestamp(fromTimestamp);
             resetMiku(getRawControl(recordRef.current, fromTimestamp));
         }
@@ -929,7 +931,6 @@ function App() {
         }
 
         setPlayType(v || 0);
-        playTypeChangeTime.current = performance.now();
     }, [layer, playType, record.length, resetMiku]);
 
 
