@@ -1402,6 +1402,7 @@ function App() {
                         mouseY: latestMouseDown.current ? mouseY : undefined,
                         keyInput: keyInput?.length ? keyInput : undefined
                     }
+                    const t = Math.max(timestamp - playTypeChangeTime.current, 0) * playSpeed + editorTimestampOnPlay.current;
                     if (
                         i > 0 &&
                         (con.mouseX === record[layer].a[i].c.mouseX) &&
@@ -1410,12 +1411,12 @@ function App() {
                         (con.mouseY === record[layer].a[i - 1].c.mouseY) &&
                         (record[layer].a[i].c.keyInput?.join('||') === record[layer].a[i - 1].c.keyInput?.join('||'))
                     ) record[layer].a[i] = {
-                        t: (timestamp - playTypeChangeTime.current) * playSpeed + editorTimestampOnPlay.current,
+                        t,
                         c: con,
                     };
                     else
                         record[layer].a.push({
-                            t: (timestamp - playTypeChangeTime.current) * playSpeed + editorTimestampOnPlay.current,
+                            t,
                             c: con,
                         });
                     return [...record];
