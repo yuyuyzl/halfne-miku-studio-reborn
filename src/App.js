@@ -1419,7 +1419,7 @@ function App() {
                         keyInput: keyInput?.length ? keyInput : undefined
                     }
                     const t = Math.max(timestamp - playTypeChangeTime.current, 0) * playSpeed + editorTimestampOnPlay.current;
-                    if (isNaN(t)) debugger;
+                    // if (isNaN(t)) debugger;
                     if (
                         i > 0 &&
                         (con.mouseX === record[layer].a[i].c.mouseX) &&
