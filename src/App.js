@@ -480,7 +480,8 @@ function TimeLine({
                                                         if (c.selected) c.selected = 1;
                                                     }
                                                 }
-                                            } else
+                                            } else {
+                                                r.selected = 2;
                                                 for (let line of record) {
                                                     let multiSelectStart = false;
                                                     for (let c of line.a) {
@@ -504,8 +505,10 @@ function TimeLine({
                                                         }
                                                     }
                                                 }
+                                            }
                                             r.selected = 2;
                                             setRecord([...record]);
+                                            window.record = record;
                                             console.log(e);
                                             // selectionDragging.current=true;
                                             // e.stopPropagation();
@@ -1415,6 +1418,7 @@ function App() {
                         keyInput: keyInput?.length ? keyInput : undefined
                     }
                     const t = Math.max(timestamp - playTypeChangeTime.current, 0) * playSpeed + editorTimestampOnPlay.current;
+                    if (isNaN(t)) debugger;
                     if (
                         i > 0 &&
                         (con.mouseX === record[layer].a[i].c.mouseX) &&
