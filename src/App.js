@@ -1409,6 +1409,7 @@ function App() {
     useEffect(() => {
         if (playType === -1) {
             const {mouseX, mouseY, timestamp, keyInput} = control;
+            if (timestamp === undefined) return; // control is not from real input
             setRecord(record => {
                     if (!record[layer]) record[layer] = {a: []};
                     const i = record[layer].a.length - 1;
@@ -1505,6 +1506,8 @@ function App() {
             })
         }
     }, [playType])
+
+    // if (control.timestamp === undefined) debugger;
 
     const controlTypePanel = useMemo(() => <ToggleButtonGroup
         className={'control-type'}
