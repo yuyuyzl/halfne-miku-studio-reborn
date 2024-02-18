@@ -424,13 +424,21 @@ function TimeLine({
                                 const {x, width} = timelineRef.current.getBoundingClientRect();
                                 const {clientX} = e;
                                 const newTS = (Math.max(l2t(100 * (clientX - x) / width), 0));
+                                let dTS;
                                 setRecord(record => {
                                         for (let l of record) {
                                             let shouldSort = false;
                                             for (let c of l.a) {
-                                                if (c.selected) {
+                                                if (c.selected === 2) {
                                                     shouldSort = true;
+                                                    dTS = newTS - c.t;
                                                     c.t = newTS;
+                                                }
+                                            }
+                                            for (let c of l.a) {
+                                                if (c.selected === 1) {
+                                                    shouldSort = true;
+                                                    c.t += dTS;
                                                 }
                                             }
                                             if (shouldSort) l.a = l.a.sort((a, b) => a.t - b.t);
@@ -466,31 +474,37 @@ function TimeLine({
                                         }}
                                         title={JSON.stringify(r.c)}
                                         onMouseDown={(e) => {
-
-                                            if (!l) r.selected = true;
-                                            for (let line of record) {
-                                                let multiSelectStart = false;
-                                                for (let c of line.a) {
-                                                    if (c.selected)
-                                                        if (e.shiftKey && !l)
-                                                            multiSelectStart = true;
-                                                        else if (c !== r) delete c.selected;
-                                                    if (multiSelectStart) c.selected = true;
-                                                    if (c === r) multiSelectStart = false;
-                                                }
-                                                if (multiSelectStart) {
-                                                    let state = 0;
+                                            if (r.selected) {
+                                                for (let line of record) {
                                                     for (let c of line.a) {
-                                                        if (c.selected) {
-                                                            if (state === 2) delete c.selected;
-                                                            if (state === 1) state = 2;
-                                                            if (state === 0) state = 1;
-                                                        } else {
-                                                            if (state === 1) c.selected = true;
+                                                        if (c.selected) c.selected = 1;
+                                                    }
+                                                }
+                                            } else
+                                                for (let line of record) {
+                                                    let multiSelectStart = false;
+                                                    for (let c of line.a) {
+                                                        if (c.selected)
+                                                            if (e.shiftKey && !l)
+                                                                multiSelectStart = true;
+                                                            else if (c !== r && !e.ctrlKey) delete c.selected;
+                                                        if (multiSelectStart) c.selected = 1;
+                                                        if (c === r) multiSelectStart = false;
+                                                    }
+                                                    if (multiSelectStart) {
+                                                        let state = 0;
+                                                        for (let c of line.a) {
+                                                            if (c.selected) {
+                                                                if (state === 2) delete c.selected;
+                                                                if (state === 1) state = 2;
+                                                                if (state === 0) state = 1;
+                                                            } else {
+                                                                if (state === 1) c.selected = 1;
+                                                            }
                                                         }
                                                     }
                                                 }
-                                            }
+                                            r.selected = 2;
                                             setRecord([...record]);
                                             console.log(e);
                                             // selectionDragging.current=true;
@@ -518,7 +532,7 @@ function TimeLine({
                                         <div
                                             className='timeline-R-content-layer-control-dragger'
                                             onMouseDown={(e) => {
-                                                if (!l) selectionDragging.current = true;
+                                                if (!l && !e.shiftKey && !e.ctrlKey) selectionDragging.current = true;
                                                 // e.stopPropagation();
                                             }}
                                         />
@@ -962,7 +976,7 @@ function App() {
                             orig = c;
                         } else {
                             if (orig && c.c.keyInput) {
-                                c.selected = true;
+                                c.selected = 2;
                                 timetarget = c.t;
                                 delete orig.selected;
                                 break;
