@@ -16,6 +16,8 @@ https://github.com/Bietol/HalfneMiku
 
 # 快速教学
 
+https://www.bilibili.com/video/BV1yK42187Po  
+
 如果你要录制鼠标动作 需要按下左键 在舞台里拖才会被录制  
 你可以在时间轴线上使用滚轮放大看看图层具体的内容  
 然后除了鼠标以外你还可以通过键盘f1-f8，1234567，qweasd，x更改表情，这些不需要鼠标左键  
