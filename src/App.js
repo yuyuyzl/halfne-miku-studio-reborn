@@ -105,6 +105,17 @@ function requestDeviceMotion(callback) {
     } else callback(new Error("DeviceMotion is not supported."));
 }
 
+function isDOMOverlap(a, b) {
+    const rectA = a.getBoundingClientRect();
+    const rectB = b.getBoundingClientRect();
+    const nonIntersect =
+        rectB.right < rectA.left ||
+        rectB.left > rectA.right ||
+        rectB.bottom < rectA.top ||
+        rectB.top > rectA.bottom;
+    return !nonIntersect;
+}
+
 function TimeLineButtons({
                              playType,
                              togglePlayType,
@@ -304,6 +315,9 @@ function TimeLine({
     const [centerOffset, setCenterOffset] = useState(30000);
     const timelineRef = useRef();
     const selectionDragging = useRef(false);
+    const rectSelectStart = useRef();
+    const [rectSelectEnd, setRectSelectEnd] = useState(undefined);
+    const rectSelect = useRef();
 
     const t2l = useCallback((timestamp) => ((timestamp - centerOffset) / scale + 50), [centerOffset, scale]);
     const l2t = useCallback((left) => centerOffset + (left - 50) * scale, [centerOffset, scale]);
@@ -343,6 +357,19 @@ function TimeLine({
     }, [l2t, setEditorTimestamp]);
 
     return <div className='timeline'>
+        {rectSelectEnd &&
+            <div ref={rectSelect}
+                 style={{
+                     position: 'fixed',
+                     zIndex: 10000,
+                     pointerEvents: "none",
+                     left: Math.min(rectSelectStart.current.clientX, rectSelectEnd.clientX),
+                     width: Math.abs(rectSelectStart.current.clientX - rectSelectEnd.clientX),
+                     top: Math.min(rectSelectStart.current.clientY, rectSelectEnd.clientY),
+                     height: Math.abs(rectSelectStart.current.clientY - rectSelectEnd.clientY),
+                     background: 'rgba(169,244,255,0.4)',
+                     border: '1px solid rgba(106,186,196,0.7)'
+                 }}/>}
         <div className='timeline-L'>
             {useMemo(() =>
                     <div className='timeline-L-toolbar'>
@@ -399,7 +426,7 @@ function TimeLine({
                         onWheel={timelineWheel}
                         onClick={handleTimelineMouse}
                         onMouseMove={e => {
-                            e.buttons && handleTimelineMouse(e)
+                            !e.shiftKey && e.buttons && handleTimelineMouse(e)
                         }}
                     >
                         {marks.map(o => <div className='timeline-R-time-mark' style={{left: t2l(o) + '%'}}/>)}
@@ -446,23 +473,61 @@ function TimeLine({
                                         return [...record];
                                     }
                                 )
+                            } else {
+                                if (e.buttons && e.shiftKey) {
+                                    setRectSelectEnd(e);
+                                    console.log(rectSelect.current)
+                                    setRecord(record => {
+                                        for (let l of record)
+                                            for (let c of l.a) {
+                                                if (c.selected) delete c.selected
+                                            }
+                                        document.querySelectorAll('.timeline-R-content-layer-control').forEach(el => {
+                                            if (isDOMOverlap(el, rectSelect.current)) {
+                                                console.log(el.dataset);
+                                                record[el.dataset.layerIndex].a[el.dataset.nodeIndex].selected = 1;
+                                            }
+                                        })
+                                        return [...record]
+                                    })
+
+                                    // setRecord(record => {
+                                    //         for (let l of record) {
+                                    //             for (let c of l.a) {
+                                    //                 // do select
+                                    //             }
+                                    //         }
+                                    //         return [...record];
+                                    //     }
+                                    // )
+                                }
                             }
                         }}
+                        onMouseDown={e => {
+                            if (e.shiftKey) {
+                                rectSelectStart.current = e;
+                                setRectSelectEnd(e);
+                            }
+
+                        }
+                        }
                         onMouseUp={e => {
                             selectionDragging.current = false;
+                            rectSelectStart.current = undefined;
+                            setRectSelectEnd(undefined);
                         }}
                     >
-                        {record.map(({a: o = [], l = false}, i) => {
-                            let renderNodes = o.filter((r, i, a) => t2l(r.t) >= 0 && t2l(r.t) < 100);
-                            renderNodes = [o[o.indexOf(renderNodes[0]) - 1], ...renderNodes, o[o.indexOf(renderNodes[renderNodes.length - 1]) + 1]].filter(o => o);
+                        {record.map(({a: layerArr = [], l = false}, layerIndex) => {
+                            let renderNodes = layerArr.filter((r, itemIndex, a) => t2l(r.t) >= 0 && t2l(r.t) < 100);
+                            renderNodes = [layerArr[layerArr.indexOf(renderNodes[0]) - 1], ...renderNodes, layerArr[layerArr.indexOf(renderNodes[renderNodes.length - 1]) + 1]].filter(o => o);
                             const shouldSimplify = playType === -1 || (renderNodes.length > 100 && scale >= 100);
                             return (<div className='timeline-R-content-layer'>
-                                {(shouldSimplify && o.length) ? <div className='timeline-R-content-layer-block'
-                                                                     style={{
-                                                                         left: t2l(o[0].t) + '%',
-                                                                         right: 'calc( ' + (100 - t2l(o[o.length - 1].t)) + '% - 1px ',
-                                                                         background: o.some(r => r.c.mouseX) ? '#efe' : o.some(r => r.c.keyInput) ? '#eef' : undefined,
-                                                                     }}>
+                                {(shouldSimplify && layerArr.length) ? <div className='timeline-R-content-layer-block'
+                                                                            style={{
+                                                                                left: t2l(layerArr[0].t) + '%',
+                                                                                right: 'calc( ' + (100 - t2l(layerArr[layerArr.length - 1].t)) + '% - 1px ',
+                                                                                background: layerArr.some(r => r.c.mouseX) ? '#efe' : layerArr.some(r => r.c.keyInput) ? '#eef' : undefined,
+                                                                            }}>
                                 </div> : null}
                                 {!shouldSimplify ? renderNodes.map((r, i, o) =>
                                     <div
@@ -473,6 +538,8 @@ function TimeLine({
                                             background: r.c.mouseX ? '#efe' : r.c.keyInput ? '#eef' : undefined,
                                         }}
                                         title={JSON.stringify(r.c)}
+                                        data-layer-index={layerIndex}
+                                        data-node-index={layerArr.indexOf(r)}
                                         onMouseDown={(e) => {
                                             if (r.selected) {
                                                 for (let line of record) {
