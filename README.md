@@ -14,9 +14,10 @@ https://www.deviantart.com/johnsu/art/Halfne-Miku-Studio-396850314
 
 https://github.com/Bietol/HalfneMiku
 
-# 还没有写文档但是快速教学
+# 快速教学
 
-~~节选自群聊天记录~~  
+https://www.bilibili.com/video/BV1yK42187Po  
+
 如果你要录制鼠标动作 需要按下左键 在舞台里拖才会被录制  
 你可以在时间轴线上使用滚轮放大看看图层具体的内容  
 然后除了鼠标以外你还可以通过键盘f1-f8，1234567，qweasd，x更改表情，这些不需要鼠标左键  
@@ -28,6 +29,10 @@ https://github.com/Bietol/HalfneMiku
 这样理论上不录制也可以进行所有编辑操作  
 在导入音乐的时候会自动配置渲染范围到音乐长度  
 你也可以使用键盘[ ]键配置渲染范围（时间轴上的[ ]图标）  
+
+# 渲染器  
+
+https://github.com/yuyuyzl/halfne-miku-studio-reborn-render  
 
 ## Available Scripts
 
